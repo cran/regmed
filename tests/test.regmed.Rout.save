@@ -1,0 +1,76 @@
+
+R version 3.6.2 (2019-12-12) -- "Dark and Stormy Night"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> require(regmed)
+Loading required package: regmed
+Loading required package: glasso
+> 
+> set.seed(1000)
+> 
+> data(regmed_example)
+> 
+>  y <- regmed_example$y
+>  x <- regmed_example$x
+>  med <- regmed_example[, -c(1,2)]
+>  fit.grid <- regmed.grid(x, med, y, lambda.vec= c(seq(from=1, to=0, by = -.1)), 
++ frac.lasso=.8)
+> fit.grid
+Call:
+regmed.grid(x = x, mediator = med, y = y, lambda.vec = c(seq(from = 1, 
+    to = 0, by = -0.1)), frac.lasso = 0.8)
+
+   lambda converge iter df      bic
+1     1.0     TRUE    2  2 925.5554
+2     0.9     TRUE    2  2 925.5554
+3     0.8     TRUE    7  3 929.1584
+4     0.7     TRUE    4  4 924.6655
+5     0.6     TRUE    3  4 915.5952
+6     0.5     TRUE   20  6 913.5361
+7     0.4     TRUE   13  7 900.2680
+8     0.3     TRUE    7  9 892.1587
+9     0.2     TRUE    7  9 881.6875
+10    0.1     TRUE    6 10 885.3191
+11    0.0     TRUE    7 11 898.7159
+> 
+> ## get best fit
+> fit.trim <- trim.best(fit.grid)
+> which.med <- colnames(med) %in% dimnames(fit.trim$alpha)[[1]]
+> med.selected <- med[, which.med]
+> 
+> fit.regmed <- regmed.fit(x, med.selected, y, lambda = 0.2, frac.lasso=.8)
+> summary(fit.regmed)
+Call:
+regmed.fit(x = x, mediator = med.selected, y = y, lambda = 0.2, 
+    frac.lasso = 0.8)
+
+Coefficients:
+                    alpha       beta  alpha.beta
+med.cg01644731  0.2033823 -0.2112078 -0.04295593
+med.cg06890779 -0.2562849  0.1199339 -0.03073725
+
+sum of alpha*beta =  -0.07369318 
+delta =  -0.1041897 
+sum of delta + alpha*beta =  -0.1778829 
+var(x) =  0.9874905 
+var(y) =  0.8213461 
+> 
+> 
+> 
+> proc.time()
+   user  system elapsed 
+  0.285   0.056   0.407 
