@@ -22,7 +22,7 @@ fit.trim <- trim.best(fit.grid)
 summary.regmed(fit.trim)
 
 ## ---- plotregmed--------------------------------------------------------------
-plot(fit.trim)
+plot(fit.trim, cex=.6)
 
 ## ----med.subset---------------------------------------------------------------
 ## choose subset of mediators that are in fit.trim
@@ -37,7 +37,7 @@ fit.lam0 <- regmed.fit(trauma, med.selected, cortisol, lambda = 0.0, frac.lasso=
 summary(fit.lam0)
 
 ## ---- plotfit-----------------------------------------------------------------
-plot(fit.lam2, lty=2, lwd=3, cex=1.2)
+plot(fit.lam2, lty=2, lwd=3, cex=.7)
 
 ## ---- lavaan------------------------------------------------------------------
 library(lavaan)

@@ -77,7 +77,7 @@ Plot regmed object
 ==================
 
 ```{r, plotregmed}
-plot(fit.trim)
+plot(fit.trim, cex=.6)
 ```
 
 Fit regmed with different lambda penalties
@@ -105,7 +105,7 @@ We show the plot method can display different sized text and line types,
 along with using the variable names from the call to *regmed.fit()*.
 
 ```{r, plotfit}
-plot(fit.lam2, lty=2, lwd=3, cex=1.2)
+plot(fit.lam2, lty=2, lwd=3, cex=.7)
 ```
 
 Use Lavaan to get SE of Parameters
@@ -141,6 +141,6 @@ The output from lavaan sem model shows the regressions for y regressed on x and 
 References
 =============
 
-+ Schaid DJ, Sinnwell JP. (2020) Penalized Models for Analysis of Multiple Mediators. To appear in Genetic Epidemiology.
++ Schaid DJ, Sinnwell JP. (2020) Penalized Models for Analysis of Multiple Mediators. Genet Epidemiol, to appear.
 
 + Rosseel Y. (2012) lavaan: An R Package for Structural Equation Modeling. Journal of Statistical Software, 48(2), 1–36. http://www.jstatsoft.org/v48/i02/.

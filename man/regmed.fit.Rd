@@ -16,7 +16,7 @@ through the mediator. The model also allows a direct effect of x on y: x[delta] 
 }
 \usage{
 regmed.fit(x, mediator, y, lambda, frac.lasso, x.std=TRUE, med.std=TRUE,
-max.outer=5000, max.inner=100, print.iter=FALSE)
+max.outer=5000, max.inner=100, step.multiplier = 0.5, wt.delta = .5, print.iter=FALSE)
 }
 \arguments{
   \item{x}{
@@ -54,6 +54,15 @@ for each pair of alpha-beta parameters for each mediator, an inner loop
 for direct effect (delta), and inner loops for residual variances for x
 and for y.
 }
+ \item{step.multiplier}{
+a value between 0 and 1 for backtracking, to shrink step size. Value of
+0.5 is typical default.
+}
+\item{wt.delta}{
+  a weight >=0 for how much weight should be given to shrinking delta
+  parameter, by penalaty lambda*wt.delta.
+}
+
   \item{print.iter}{
 print iteration history during fitting routine
 }

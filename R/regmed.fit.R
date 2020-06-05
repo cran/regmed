@@ -1,7 +1,8 @@
 regmed.fit <-
 function(x, mediator, y, lambda, frac.lasso, 
-                       x.std =TRUE, med.std=TRUE, max.outer=5000, max.inner=100, 
-                      print.iter=FALSE){
+         x.std =TRUE, med.std=TRUE, max.outer=5000, max.inner=100,
+         step.multiplier = 0.5, wt.delta = .5,
+         print.iter=FALSE){
   
   zed<-match.call()
  
@@ -43,9 +44,10 @@ function(x, mediator, y, lambda, frac.lasso,
   save<- rcpp_regmed(alpha=inits$Alpha, beta=inits$Beta, delta=inits$Delta,
                      vary = inits$vary, varx = inits$varx, SampCov = inits$SampCov,
                      inits$MedCov, inits$sampleSize, fracLasso = frac.lasso,
-                     lambda = lambda, wt_delta = 0.5,
+                     lambda = lambda, wt_delta = wt.delta,
                      max_iter=max.outer, max_iter_inner=max.inner,
-                     tol=1e-6, step_multiplier =.8,
+                     tol=1e-6, vary_step_size = inits$vary.step.size,
+                     step_multiplier = step.multiplier,
                      verbose=print.iter)
 
   ### G: this is done in regmed.grid, do you want to do this here as well?
@@ -66,7 +68,7 @@ function(x, mediator, y, lambda, frac.lasso,
   save$MedCov <- inits$MedCov
 
   save$call <- zed
-  
+  save$frac.lasso <- frac.lasso
   class(save)<-"regmed"
 
   return(save)

@@ -1,5 +1,11 @@
 \name{NEWS}
 \title{NEWS file for the regmed package}
+\section{Release Notes for version 1.1}{
+  \itemize{
+    \item Fix BIC calculation
+    \item default lambda=0 for trim.best()
+  }
+} 
 \section{Release Notes for version 1.0}{
   \itemize{
     \item Original release to CRAN

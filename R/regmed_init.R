@@ -32,6 +32,10 @@ function(dat.obj,x.std=TRUE, med.std=TRUE){
   varx <- var(x)
   vary <- var(y)
 
-  return(list(Alpha=Alpha,Beta=Beta,Delta=Delta,varx=varx,vary=vary,SampCov=SampCov,MedCov=MedCov,sampleSize=sampleSize))
+  vary.step.size <- 0.10 * vary
+  if(vary.step.size < 0.01) vary.step.size <- .01
+    
+  return(list(Alpha=Alpha,Beta=Beta,Delta=Delta,varx=varx,vary=vary,SampCov=SampCov,
+              MedCov=MedCov,vary.step.size=vary.step.size, sampleSize=sampleSize))
 
 }

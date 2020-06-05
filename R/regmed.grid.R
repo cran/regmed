@@ -1,7 +1,7 @@
 regmed.grid <-
 function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner=100,
-                        x.std=TRUE, med.std=TRUE, print.iter = FALSE){
-  
+                        x.std=TRUE, med.std=TRUE,  step.multiplier = 0.5, wt.delta = .5, print.iter = FALSE){
+ 
   zed<-match.call()
 
   
@@ -55,9 +55,10 @@ function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner
     save <- rcpp_regmed(alpha=inits$Alpha, beta=inits$Beta, delta=inits$Delta,
                         vary = inits$vary, varx = inits$varx, SampCov = inits$SampCov,
                         inits$MedCov, inits$sampleSize, fracLasso = frac.lasso,
-                        lambda = lambda.vec[i], wt_delta = 0.5,
+                        lambda = lambda.vec[i], wt_delta = wt.delta,
                         max_iter= max.outer, max_iter_inner=max.inner,
-                        tol=1e-6, step_multiplier =.8,
+                        tol=1e-6,vary_step_size = inits$vary.step.size,
+                        step_multiplier = step.multiplier,
                         verbose=print.iter)
 
 
@@ -85,6 +86,9 @@ function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner
   gridData <- regmed_gridData(fit.lst=fit.lst,lambda.vec=lambda.vec)
   
   out<-list(fit.list=fit.lst, grid.data=gridData, sample.size=inits$sampleSize, MedCov=inits$MedCov, call=zed)
+
+    out$frac.lasso <- frac.lasso
+    
   class(out)<-"regmed.grid"
 
   return(out)

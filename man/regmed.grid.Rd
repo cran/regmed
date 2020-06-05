@@ -16,8 +16,8 @@ through the mediator. The model also allows a direct effect of x on y: x[delta] 
 }
 \usage{
 regmed.grid(x, mediator, y, lambda.vec, frac.lasso=0.8, max.outer=5000,
-max.inner=100, x.std=TRUE, med.std=TRUE, print.iter=FALSE)
-
+max.inner=100, x.std=TRUE, med.std=TRUE, step.multiplier = 0.5,
+wt.delta = .5, print.iter=FALSE)
 }
 \arguments{
   \item{x}{
@@ -55,6 +55,14 @@ devation of x. Note that x will be centered on its mean.
   \item{med.std}{
 logical (TRUE/FALSE) whether to standardize mediators by dividing each mediator by its standard
 deviation. Note that mediators will be centered on their means.
+}
+\item{step.multiplier}{
+a value between 0 and 1 for backtracking, to shrink step size. Value of
+0.5 is typical default.
+}
+\item{wt.delta}{
+  a weight >=0 for how much weight should be given to shrinking delta
+  parameter, by penalaty lambda*wt.delta.
 }
   \item{print.iter}{
 print iteration history during fitting routine 

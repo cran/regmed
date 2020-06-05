@@ -430,7 +430,8 @@ List  rcpp_regmed(arma::vec alpha,
 		  int max_iter,
 		  int max_iter_inner,
 		  double tol=1e-5,
-		  double step_multiplier =.8,
+		  double vary_step_size = .05, // DJS added
+		  double step_multiplier =.5,  // DJS changed default to .5
 		  bool verbose=false){
   
   // fit regularized mediation model via structural equation model
@@ -549,7 +550,8 @@ List  rcpp_regmed(arma::vec alpha,
     
       // optimize step size
   
-      step = 1.0;
+      step = 0.5; // DJS changed from 1.0 to 0.5
+
       for(int i=0; i<10; i++){
 
         delta_new = update_delta(grad_delta, delta_old, step, lambda, wt_delta);
@@ -613,7 +615,8 @@ List  rcpp_regmed(arma::vec alpha,
 
         // optimize step size
         
-        step = 1.0;
+        step = 0.5; // DJS changed from 1.0 to 0.5
+
         for(int i=0; i<10; i++){
       
           theta_new = update_theta(gradient, theta_ctr, step, lambda, fracLasso);
@@ -663,75 +666,8 @@ List  rcpp_regmed(arma::vec alpha,
 
     } // end loop over mediator groups
    
-
-    //===========================  update var(x) ====================================//
-
-    iter_inner = 0;
-    converge_inner = false;
-
-    while( (iter_inner < max_iter_inner) & !converge_inner ){
+    // skip update of var(x) since doesn't change
  
-      // update gradient
-  
-      varx_old = varx;
-      grad_varx =  grad_loss_vx(alpha, beta, delta, SampCov, Sinv);
-      
-
-      // optimize step size
-      
-      step = 1.0;
-      for(int i=0; i<10; i++){
-	
-	varx_new = varx_old - step*grad_varx;
-
-	// bound var away from 0
-	if(varx_new < 0.0001){
-	  step = step_multiplier * step;
-	  continue;
-	}
-
-	S(0,0) = varx_new;
-	Sinv(0,0) = 1.0/varx_new;
-	ImpCov = B * S * B.t();
-	loss_new =  loss_unpenalized(ImpCov, SampCov, alpha, beta, delta_new, Sinv, logdetMedCov);
-
-	varx_diff = varx_new - varx_old;
-	gdiff = grad_varx * varx_diff;
-	diff2 = varx_diff * varx_diff;
-	loss_majorize = loss_old + gdiff + diff2 / (2.0*step);
-	
-	if(loss_new <= loss_majorize){
-	  break;
-	}
-	step = step_multiplier * step;
-      }
-      
-      // Nesterov step
-      varx_new = varx_old + varx_diff*double(iter_inner + 1)/double(iter_inner + 4);
-      // bound var away from 0
-      if(varx_new < 0.0001){
-	varx_new = 0.0001;
-      }
-
-      varx = varx_new;
-      S(0,0) = varx;
-      Sinv(0,0) = 1.0/varx; 
-      ImpCov = B * S * B.t();
-      
-      // check convergence
-        
-      loss_new =  loss_unpenalized(ImpCov, SampCov, alpha, beta, delta, Sinv, logdetMedCov);
-      pen_loss_new =  loss_new + penalty(alpha, beta, delta, lambda, fracLasso, wt_delta);
-        
-        if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0) ) {
-          converge_inner = true;
-        }
-
-	pen_loss_old = pen_loss_new;
-	loss_old = loss_new;
-	iter_inner ++;
-    }
-
 
     //================================= update var(y) =======================================//
 
@@ -748,7 +684,8 @@ List  rcpp_regmed(arma::vec alpha,
  
       // optimize step size
       
-      step = 1.0;
+      step = vary_step_size; // DJS changed from 1.0 to vary_step_size
+      
       for(int i=0; i<10; i++){
 	
 	vary_new = vary_old - step*grad_vary;
@@ -764,32 +701,27 @@ List  rcpp_regmed(arma::vec alpha,
 	ImpCov = B * S * B.t();
 
 	loss_new =  loss_unpenalized(ImpCov, SampCov, alpha, beta, delta_new, Sinv, logdetMedCov);
-	vary_diff = vary_new - vary_old;
-	gdiff = grad_vary * vary_diff;
-	diff2 = vary_diff * vary_diff;
-	loss_majorize = loss_old + gdiff + diff2 / (2.0*step);
-	
-	if(loss_new <= loss_majorize){
+
+	// DJS changed to loss_old below
+	if(loss_new <= loss_old){
 	  break;
 	}
 	step = step_multiplier * step;
       }
-      
-      // Nesterov step
-      vary_new = vary_old + vary_diff*double(iter_inner + 1)/double(iter_inner + 4);
-      // bound var away from 0
-      if(vary_new < 0.0001){
-	vary_new = 0.0001;
-      }
-
-      vary = vary_new;
-      S(S.n_rows-1,S.n_cols-1) = vary;
-      Sinv(S.n_rows-1, S.n_cols-1) = 1/vary;
-      ImpCov = B * S * B.t();
-    
+          
+      // if after step opt, loss_new > loss_old, revert to loss_old and parm_old
+       if(loss_old < loss_new){
+	vary = vary_old;
+	S(S.n_rows-1,S.n_cols-1) = vary_old;
+	Sinv(Sinv.n_rows-1,Sinv.n_cols-1) = 1.0/vary_old;
+	ImpCov = B * S * B.t();
+	loss_new =  loss_unpenalized(ImpCov, SampCov, alpha, beta, delta_new, Sinv, logdetMedCov);
+       }  else{
+           vary = vary_new;
+       }
       // check convergence
         
-      loss_new =  loss_unpenalized(ImpCov, SampCov, alpha, beta, delta, Sinv, logdetMedCov);
+ 
       pen_loss_new =  loss_new + penalty(alpha, beta, delta, lambda, fracLasso, wt_delta);
       
       if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0) ) {
@@ -828,11 +760,12 @@ List  rcpp_regmed(arma::vec alpha,
     if(fabs(alpha(i))  >  eps) {df++; }
     if(fabs(beta(i))   >  eps) {df++; }
   }
+  
   if(fabs(delta) > eps) {df++; }
-  if(fabs(varx) > eps)  {df++; }
   if(fabs(vary) > eps)  {df++; }
 
-  double bic =  2.0*loss_new*sample_size + log(sample_size)*df;
+  // DJS: should not have multiplied loss by 2
+  double bic =  loss_new*sample_size + log(sample_size)*df;
  
   return Rcpp::List::create(Rcpp::Named("alpha") = alpha,
                             Rcpp::Named("beta") = beta,

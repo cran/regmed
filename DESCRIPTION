@@ -1,8 +1,8 @@
 Package: regmed
 Type: Package
 Title: Regularized Mediation Analysis
-Version: 1.0.5
-Date: 2020-04-22
+Version: 1.1.0
+Date: 2020-06-05
 Authors@R: c(
     person("Jason", "Sinnwell", email = "sinnwell.jason@mayo.edu", comment=c(ORCID="0000-0003-1964-5522"), role = c("aut","cre"),),
     person("Daniel", "Schaid", email = "schaid.daniel@mayo.edu", comment=c(ORCID="0000-0003-1457-6433"), role = c("aut"),),
@@ -16,10 +16,10 @@ LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
 VignetteBuilder: knitr
 URL: https://cran.r-project.org/package=regmed
-Packaged: 2020-04-22 14:34:13 UTC; sinnwell
+Packaged: 2020-06-05 16:41:58 UTC; sinnwell
 Author: Jason Sinnwell [aut, cre] (<https://orcid.org/0000-0003-1964-5522>),
   Daniel Schaid [aut] (<https://orcid.org/0000-0003-1457-6433>),
   Gregory Jenkins [ctb] (<https://orcid.org/0000-0001-6408-6227>)
 Maintainer: Jason Sinnwell <sinnwell.jason@mayo.edu>
 Repository: CRAN
-Date/Publication: 2020-04-28 09:20:03 UTC
+Date/Publication: 2020-06-05 17:50:03 UTC
