@@ -1,5 +1,4 @@
-regmed.fit <-
-function(x, mediator, y, lambda, frac.lasso, 
+regmed.fit <- function(x, mediator, y, lambda, frac.lasso=.8, 
          x.std =TRUE, med.std=TRUE, max.outer=5000, max.inner=100,
          step.multiplier = 0.5, wt.delta = .5,
          print.iter=FALSE){
@@ -32,11 +31,11 @@ function(x, mediator, y, lambda, frac.lasso,
 
   ### check x,y and mediator ###
 
-  checked.dat<-regmed_dat_check(x=x,y=y,mediator=mediator)
+  checked.dat <- regmed.dat.check(x=x,y=y,mediator=mediator)
 
   ### scale and center x,y and mediator as appropriate, initialize variables for rcpp_regmed ###
 
-  inits<-regmed_init(dat.obj=checked.dat,x.std=x.std, med.std=med.std)
+  inits<- regmed.init(dat.obj=checked.dat,x.std=x.std, med.std=med.std)
  
   ### fit regmed ###
 
@@ -50,19 +49,15 @@ function(x, mediator, y, lambda, frac.lasso,
                      step_multiplier = step.multiplier,
                      verbose=print.iter)
 
-  ### G: this is done in regmed.grid, do you want to do this here as well?
-  ### zero out alphas/betas if they are sufficiently close to 0, based on tol parameter ###    
-
-  #savealpha <- ifelse(abs(save$alpha) < tol, 0.0, save$alpha)
-  #save$beta  <- ifelse(abs(save$beta)  < tol, 0.0, save$beta)
-
   rownames(save$alpha)<-checked.dat$mediator.names
+  colnames(save$alpha) <- deparse(substitute(x))
   rownames(save$beta)<-checked.dat$mediator.names
-
+  colnames(save$beta) <- deparse(substitute(y))
+  
   ### check on invalid alpha/beta ###
 
   if(any(is.nan(save$alpha)) | any(is.nan(save$beta))) stop("invalid alpha or beta estimates")
-  if(any(is.na(save$alpha)) | any(is.na(save$beta))) stop("invalid alpha or beta estimates")
+  if(any(is.na(save$alpha))  | any(is.na(save$beta))) stop("invalid alpha or beta estimates")
 
   
   save$MedCov <- inits$MedCov

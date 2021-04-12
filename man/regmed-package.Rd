@@ -21,6 +21,10 @@ Maintainer: \packageMaintainer{regmed}
 }
 \references{
 Schaid, DJ, Sinnwell JP. (2020) Penalized Models for Analysis of
-Multiple Mediators. To appear in Genetic Epidemiology
+Multiple Mediators. Genet Epidemiol 44:408-424.
+
+Schaid DJ, Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
+Models for Multivariate Data. Submitted, 2021.
+
 }
 \keyword{ package }

@@ -1,6 +1,7 @@
 \name{regmed.grid}
 \alias{regmed.grid}
 \alias{print.regmed.grid}
+\alias{summary.regmed.grid}
 \title{
 Regularized mediation models over a vector grid of lambda penalty values.
 }
@@ -10,9 +11,10 @@ values. Structural equation models for analysis of multiple mediators
 are extended by creating a sparse group lasso penalized model such that
 the penalty considers the natural groupings of the pair of parameters
 that determine mediation, as well as encourages sparseness of the model
-parameters. The model is x[alpha] -> mediator -> [beta]outcome, where
+parameters. The model is x-[alpha] -> mediator-[beta] -> outcome, where
 alpha and beta are the parameters for the indirect effect of x on y,
-through the mediator. The model also allows a direct effect of x on y: x[delta] -> y.
+through the mediator. The model also allows a direct effect of x on
+y: x-[delta] -> y.
 }
 \usage{
 regmed.grid(x, mediator, y, lambda.vec, frac.lasso=0.8, max.outer=5000,
@@ -21,10 +23,12 @@ wt.delta = .5, print.iter=FALSE)
 }
 \arguments{
   \item{x}{
-vector representing "exposure" variable (sometimes called instrumental variable) 
+vector representing "exposure" variable (sometimes called instrumental
+variable)  
 }
   \item{mediator}{
-matrix of mediators, rows are observations, columns are different mediators 
+matrix of mediators, rows are observations, columns are different
+mediators 
 }
   \item{y}{
 vector representing outcome
@@ -78,25 +82,22 @@ of 0 to 1. See reference for details of algorithm.
 \value{
 regmed.grid object
 }
+\examples{
+data(medsim)
+fit.grid <- regmed.grid(x[,1], med[,1:5], y[,1],
+lambda.vec= c(seq(from=1, to=0, by = -.1)),
+frac.lasso=.8)
+print(fit.grid)
+}
 \references{
 Schaid, DJ, Sinnwell JP. (2020) Penalized Models for Analysis of
-Multiple Mediators. To appear in Genetic Epidemiology
+Multiple Mediators. Genet Epidemiol 44:408-424.
 }
 \author{
- Dan Schaid, Greg Jenkins, Jason Sinnwell
+ Dan Schaid,  Jason Sinnwell
 }
 \seealso{
 \code{\link{plot.regmed.grid}}
 \code{\link{regmed.fit}}
 }
-\examples{
- data(regmed_example)
-
- y <- regmed_example$y
- x <- regmed_example$x
- med <- regmed_example[, -c(1,2)]
- fit.grid <- regmed.grid(x, med, y, lambda.vec= c(seq(from=1, to=0, by = -.1)), frac.lasso=.8)
- fit.grid
-}
-
 \keyword{ models }

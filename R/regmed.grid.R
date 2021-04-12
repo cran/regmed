@@ -1,9 +1,7 @@
-regmed.grid <-
-function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner=100,
+regmed.grid <- function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner=100,
                         x.std=TRUE, med.std=TRUE,  step.multiplier = 0.5, wt.delta = .5, print.iter = FALSE){
  
   zed<-match.call()
-
   
   ## ----------input parameters
   ## x:  vector of exposure variable
@@ -34,14 +32,13 @@ function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner
   if(max.inner <= 0) stop("invalid max.inner, must be > 0")
 
 
-
   ### check x,y and mediator ###
 
-  checked.dat<-regmed_dat_check(x=x,y=y,mediator=mediator)
+  checked.dat<- regmed.dat.check(x=x,y=y,mediator=mediator)
 
   ### scale and center x,y and mediator as appropriate, initialize variables for rcpp_regmed ###
 
-  inits<-regmed_init(dat.obj=checked.dat,x.std=x.std, med.std=med.std)
+  inits <- regmed.init(dat.obj=checked.dat,x.std=x.std, med.std=med.std)
  
    
   ### loop through lambda values ###
@@ -50,8 +47,8 @@ function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner
 
   for(i in 1:length(lambda.vec)){
   
-    if(print.iter) cat("lambda i = ", i, "\n")
-  
+    cat("fitting grid lambda [",i,"] = ", lambda.vec[i], "\n")
+
     save <- rcpp_regmed(alpha=inits$Alpha, beta=inits$Beta, delta=inits$Delta,
                         vary = inits$vary, varx = inits$varx, SampCov = inits$SampCov,
                         inits$MedCov, inits$sampleSize, fracLasso = frac.lasso,
@@ -68,7 +65,9 @@ function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner
     save$beta  <- ifelse(abs(save$beta)  < tol, 0.0, save$beta)
 
     rownames(save$alpha)<-checked.dat$mediator.names
-    rownames(save$beta)<-checked.dat$mediator.names
+    colnames(save$alpha) <- deparse(substitute(x))
+    rownames(save$beta) <-checked.dat$mediator.names
+    colnames(save$beta) <- deparse(substitute(y))
 
     ### check on invalid alpha/beta ###
 
@@ -79,15 +78,15 @@ function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner
 
     ### update initialization parameters: Alpha, Delta, Beta, varx and vary ###
 
-    inits <- regmed_grid_update(regmed.fit.obj=save,regmed.inits=inits)
+    inits <- regmed.grid.update(regmed.fit.obj=save,regmed.inits=inits)
 
   }
    
-  gridData <- regmed_gridData(fit.lst=fit.lst,lambda.vec=lambda.vec)
+  gridData <- regmed.grid.data(fit.lst=fit.lst,lambda.vec=lambda.vec)
   
   out<-list(fit.list=fit.lst, grid.data=gridData, sample.size=inits$sampleSize, MedCov=inits$MedCov, call=zed)
 
-    out$frac.lasso <- frac.lasso
+  out$frac.lasso <- frac.lasso
     
   class(out)<-"regmed.grid"
 

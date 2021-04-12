@@ -22,10 +22,8 @@ Dan Schaid, Greg Jenkins, Jason Sinnwell
 \code{\link{regmed.grid}},
 }
 \examples{
-data(regmed_example)
-y <- regmed_example$y
-x <- regmed_example$x
-med <- regmed_example[, -c(1,2)]
-fit.grid <- regmed.grid(x, med, y, lambda.vec= c(seq(from=1, to=0, by = -.1)), frac.lasso=.8)
-plot(fit.grid)
+data(medsim)
+fit.grid <- regmed.grid(x[,1], med[,1:10], y[,1],
+  lambda.vec= c(seq(from=1, to=0, by = -.1)), frac.lasso=.8)
+summary(fit.grid)
 }

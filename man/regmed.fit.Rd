@@ -1,6 +1,7 @@
 \name{regmed.fit}
 \alias{regmed.fit}
 \alias{print.regmed}
+\alias{summary.regmed}
 \title{
   Regularized Mediation model for a specified lambda penalty value.
 }
@@ -10,12 +11,12 @@ Structural equation models for analysis of multiple mediators
 are extended by creating a sparse group lasso penalized model such that
 the penalty considers the natural groupings of the pair of parameters
 that determine mediation, as well as encourages sparseness of the model
-parameters. The model is x[alpha] -> mediator -> [beta]outcome, where
+parameters. The model is x-[alpha] -> mediator-[beta] -> outcome, where
 alpha and beta are the parameters for the indirect effect of x on y,
-through the mediator. The model also allows a direct effect of x on y: x[delta] -> y.
+through the mediator. The model also allows a direct effect of x on y: x-[delta] -> y.
 }
 \usage{
-regmed.fit(x, mediator, y, lambda, frac.lasso, x.std=TRUE, med.std=TRUE,
+regmed.fit(x, mediator, y, lambda, frac.lasso=0.8, x.std=TRUE, med.std=TRUE,
 max.outer=5000, max.inner=100, step.multiplier = 0.5, wt.delta = .5, print.iter=FALSE)
 }
 \arguments{
@@ -63,7 +64,7 @@ a value between 0 and 1 for backtracking, to shrink step size. Value of
   parameter, by penalaty lambda*wt.delta.
 }
 
-  \item{print.iter}{
+\item{print.iter}{
 print iteration history during fitting routine
 }
 }
@@ -72,31 +73,20 @@ regmed object, with S3 methods available: plot, print, summary
 }
 \references{
 Schaid, DJ, Sinnwell JP. (2020) Penalized Models for Analysis of
-Multiple Mediators. To appear in Genetic Epidemiology
+Multiple Mediators. Genet Epidemiol 44:408-424.
 }
 \author{
   Dan Schaid, Greg Jenkins, Jason Sinnwell
 }
 
 \seealso{
-\code{\link{plot.regmed}}
+\code{\link{regmed.edges}}
 \code{\link{summary.regmed}}
 }
 \examples{
-data(regmed_example)
-
-y <- regmed_example$y
-x <- regmed_example$x
-med <- regmed_example[, -c(1,2)]
-fit.grid <- regmed.grid(x, med, y, lambda.vec= c(seq(from=1, to=0, by = -.1)), frac.lasso=.8)
-fit.trim <- trim.best(fit.grid)
-which.med <- colnames(med) %in% dimnames(fit.trim$alpha)[[1]]
-med.selected <- med[, which.med]
-
-fit.regmed <- regmed.fit(x, med.selected, y, lambda = 0.2, frac.lasso=.8)
-summary(fit.regmed)
-
+  data(medsim)
+  filter5 <- regmed.prefilter(x[,1], med, y[,1], k=5)
+  fit.regmed <- regmed.fit(x[,1], med[,1:5], y[,1], lambda = 0.2, frac.lasso=.8)
+  summary(fit.regmed)
 }
-
-
 \keyword{ models }

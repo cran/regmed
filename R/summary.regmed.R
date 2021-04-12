@@ -2,9 +2,7 @@ summary.regmed <- function(object, ...){
   ## input:
   ## object is output from regmed.grid.best (i.e, a single fitted model) or 
   ## output from regmed.fit
-  ## ToDo: need to check that output from regmed.fit will work, so far
-  ## Dan only used summary.regmed on output from regmed.grid.best
-  
+   
 
   cat("Call:\n")
   print(object$call)
@@ -14,6 +12,7 @@ summary.regmed <- function(object, ...){
    
   df <- data.frame(alpha=object$alpha, beta=object$beta,
                    alpha.beta=object$alpha * object$beta)
+  colnames(df) <- c("alpha","beta","alpha*beta")
   print(df, ...)
 
   s.ab <- sum(object$alpha * object$beta)

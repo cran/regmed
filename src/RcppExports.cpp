@@ -6,6 +6,31 @@
 
 using namespace Rcpp;
 
+// rcpp_mvregmed
+List rcpp_mvregmed(arma::mat alpha, arma::mat beta, arma::mat delta, arma::mat varx, arma::mat varm, arma::mat vary, arma::mat sampcov, double sample_size, double lambda, int max_iter, int max_iter_inner, double tol, double vary_step_size, double step_multiplier, bool verbose);
+RcppExport SEXP _regmed_rcpp_mvregmed(SEXP alphaSEXP, SEXP betaSEXP, SEXP deltaSEXP, SEXP varxSEXP, SEXP varmSEXP, SEXP varySEXP, SEXP sampcovSEXP, SEXP sample_sizeSEXP, SEXP lambdaSEXP, SEXP max_iterSEXP, SEXP max_iter_innerSEXP, SEXP tolSEXP, SEXP vary_step_sizeSEXP, SEXP step_multiplierSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type varx(varxSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type varm(varmSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type vary(varySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sampcov(sampcovSEXP);
+    Rcpp::traits::input_parameter< double >::type sample_size(sample_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter_inner(max_iter_innerSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< double >::type vary_step_size(vary_step_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type step_multiplier(step_multiplierSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_mvregmed(alpha, beta, delta, varx, varm, vary, sampcov, sample_size, lambda, max_iter, max_iter_inner, tol, vary_step_size, step_multiplier, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_regmed
 List rcpp_regmed(arma::vec alpha, arma::vec beta, double delta, double vary, double varx, arma::mat SampCov, arma::mat MedCov, double sample_size, double fracLasso, double lambda, double wt_delta, int max_iter, int max_iter_inner, double tol, double vary_step_size, double step_multiplier, bool verbose);
 RcppExport SEXP _regmed_rcpp_regmed(SEXP alphaSEXP, SEXP betaSEXP, SEXP deltaSEXP, SEXP varySEXP, SEXP varxSEXP, SEXP SampCovSEXP, SEXP MedCovSEXP, SEXP sample_sizeSEXP, SEXP fracLassoSEXP, SEXP lambdaSEXP, SEXP wt_deltaSEXP, SEXP max_iterSEXP, SEXP max_iter_innerSEXP, SEXP tolSEXP, SEXP vary_step_sizeSEXP, SEXP step_multiplierSEXP, SEXP verboseSEXP) {
@@ -35,6 +60,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_regmed_rcpp_mvregmed", (DL_FUNC) &_regmed_rcpp_mvregmed, 15},
     {"_regmed_rcpp_regmed", (DL_FUNC) &_regmed_rcpp_regmed, 17},
     {NULL, NULL, 0}
 };

@@ -1,0 +1,288 @@
+---
+title: "Regularized Mediation Manual"
+author: "DJ Schaid, JP Sinnwell"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    toc_depth: 2
+vignette: |
+  %\VignetteIndexEntry{Regularized Mediation Manual}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+    fig.width=7, fig.height=6,
+   tidy.opts=list(width.cutoff=100), tidy=TRUE, comment=NA)
+
+## set lib path in R (below), 
+#.libPaths(c("/projects/bsi/pharmacogenetics/s212953.SchaidMethods/Regmed/Version.2/Rlib362", .libPaths()))
+## or with or with R_LIBS env variable
+## linux: export R_LIBS=/projects/bsi/pharmacogenetics/s212953.SchaidMethods/Regmed/Version.2/Rlib362
+library(igraph)
+library(lavaan)
+library(glasso)
+library(regmed)
+```
+
+
+Overview
+==================
+
+This is a demonstration of regularized mediation analysis methods based on penalized structural equation modeling. The original version (version 1.x) on CRAN was for structural equations with multiple mediators between a single exposure variable and a single outcome variable. The penalized model implemented in the *regmed* functions is based on sparse group lasso in which the pair of parameters *alpha* and *beta* are considered a group; *alpha* is the effect of exposure on a mediator and *beta* is the effect of that mediator on the outcome.  Version 2.x and later include now include computationally efficient models that allow for multiple exposures, multiple mediators, and multiple outcomes. The penalized model for this multivariate situation, implemented in functions denoted *mvregmed*, uses a lasso (L1)  type of penalty for all parameters: *alpha* that link exposures with mediators; *beta* that link mediators with outcomes; *delta* that link exposures directly with outcomes.
+
+The default way of analyzing the data is to center and scale all x, mediator, and y variables, so each column of the x, mediator, and y variables has mean 0 and variance 1. This default approach is recommended, because it places all variables on the same scale. If adjustment for extraneous covariates is needed, regression of any of the variables on covaraites should be performed prior to use of *regmed* or *mvregmed*, and the residuals from these regression models can be used as input variables to the methods of *regmed* or *mvregmed*. When standardized varibles are used, the penalized structural equation models are modeling the correlations of variables.
+
+
+## Simulated dataset
+
+The simulated data set (named "medsim") contains 100 subjects with 10 exposure "x" variables, 200 mediator "med" variables, and 2 outcome "y" variables. 
+
+```{r, medsim}
+data(medsim)
+
+```
+
+
+*regmed*: Mediation model for 1 exposure, multiple mediators, and 1 outcome variable
+============================================
+
+This section  focuses on the original version of *regmed* that handles a single exposure and a single outcome. The user user-level functions for single outcome/exposure are:
+
++ `regmed.prefilter()` pre-filters mediators if there are more than the number of subjects
++ `regmed.grid()` penalized model for grid of lambdas
++ `regmed.grid.bestfit()` get best fit model from grid of fits
++ `regmed.fit()` fit penalized model with specified lambda
++ `plot.regmed.grid()` plot results of regmed.grid
++ `regmed.edges()` create edges from a fit of a model for use in plotting and model fit by lavaan
++ `plot.regmed.edges()` plot directed graph based on edges: exposure -> mediator -> outcome
++ `regmed.lavaan.model()` setup model to estimate unpenalized parameters by lavaann sem function
++ `regmed.lavaan.dat()` setup data to input tolavaann sem function
++ `summary.lavaan()` summarize lavaan sem model fit
+
+## Pre-filter mediators
+
+If the number of mediators exceeds the sample size, model fitting can become unstable. To reduce the number
+of mediators to fit, the  *regmed.prefilter*  uses sure independence screening (Fan & Lv, 2008) to reduce the number of potential mediator. This is based on ranking marginal correlations and then selecting the highest ranked values such that the number of parameters is less than the sample size. Because mediation depends on the two correlations, $cor(x,med)$ and $cor(med, y)$ we rank the absolute values of their products, $|cor(x, med) * cor(med, y)|$, and choose the highest k ranked values to determine which potential mediators to include in penalized mediation models. If k is not specified, the default value of k is n/2, where n is the sample size, because each mediator results in two parameters alpha and beta.
+
+We choose k=10 mediators to select, to speed calculations solely for demonstration purposes. Also, we select the first exposure variable and the first outcome variable to demonstrate methods for *regmed*. The function *regmed.prefilter* returns a list of x, mediator, and y, with each of these variables centered and scaled by default, and accounts for missing data by subsetting to subjects that are not missing any of the variables.
+
+```{r, filtermediate}
+dat.filter <- regmed.prefilter(x[,1], med, y[,1], k=10)
+```
+
+
+## Grid of lambda penalties
+
+To fit a series of models over a grid of penalty "lambda" values, it is necessary to define a vector of lambda values. It is best to arrange this vector from largest to smallest lambda values to assure that the largest lambda (first value in the vector) results in no selected parameters (alpha, beta, delta), and the smallest lambda (last value in the vector) selects multiple parameters, and that a lambda between the largest and smallest results in a minimum Bayesian Information Criterion (BIC). Starting with a large lambda and then decreasing lambda values is best, because this provides a "warm start" for each subsequent fit, with final fitted parameter values for a specific lambda used as initial values for the next lambda value. The demonstration below extracts variables that have been processed by *regmed.prefilter*.
+
+## Fit *regmed* for grid of lambda penalties
+
+```{r set_grid}
+
+lambda.grid <- seq(from=.4, to=.01, by=-.01)
+
+x1 <- dat.filter$x
+y1 <- dat.filter$y
+med <- dat.filter$mediator
+
+fit.grid <- regmed.grid(x1, med, y1, lambda.grid, frac.lasso=.8)
+
+```
+
+The plot method for regmed.grid gives two figures that represent the size of the coefficients over the grid of lambdas, and the BIC by by the grid of lambdas.
+
+```{r, methodsgrid}
+plot.regmed.grid(fit.grid)
+```
+
+
+## Select best model from grid by minimum BIC
+
+```{r, fitbest}
+
+fit.best <- regmed.grid.bestfit(fit.grid)
+summary(fit.best)
+
+```
+
+
+## Fit single *regmed* model with user-specified lambda
+
+If user prefers to specify a lambda penalty and not search through a grid, the function regmed.fit is available.
+
+```{r, singlefit}
+fit.single <- regmed.fit(x1, med, y1, lambda=0.3, frac.lasso=.8)
+summary(fit.single)
+```
+
+## Plot directed graph of fit model
+
+The demonstration below shows how to determined edges, where an edge is defined by vertex-1 pointing to vertex-2, and the vertices are the variables selected in a model. For example, if *alpha[1]* and *beta[1]* are both estimated to be non-zero, then x -> med[1] and med[1] -> y.  The function *regmed.edges* has an option to choose how vertices and edges are selected. By type="mediators", vertices and edges are selected only of the product $alpha * beta$  is non-zero, because this is required for a mediator to be truely mediating. By specifying type = "any", all vertices and edges that represent non-zero parameters are selected. For example, if *alpha[1]* is non-zero, and *beta[1]* is zero, the edge x -> med[1] is selected, but the edge med[1] -> y is not selected. To determine if terms are zero, a threshold variable *eps* is used (see help for regmed.edges).  
+
+For fit.best, the summary above shows that only *med.1* is selected as a mediator, because  $|alpha * beta| >  eps$. In this case, choosing type="mediators" selects only *med.1* to be included in edges. 
+
+In contrast, choosing type="mediators" for fit.best results in including *med.2* as an edge, even thouth it is not a mediator.
+
+
+```{r edges}
+
+edges.med <- regmed.edges(fit.best, type="mediators")
+plot.regmed.edges(edges.med)
+
+edges.any <- regmed.edges(fit.best, type="any")
+plot.regmed.edges(edges.any)
+
+```
+
+## Lavaan sem: Estimate parameters of selected model without imposing penalty
+
+Because penalized models can overly shink parameter estimates towards zero, it can be beneficial to refit the selected model without penalties. The model without penalties is a starndard structural equation model, which can be fit with the function *sem* from the package lavaan. To facilitate this step, the function *regmed.lavaan.model*  uses the edges and fit of a model to create a text string that represents the model syntax for sem. This function abides by our assumption that the residual covariances between x and med, between x and y, and between med and y, are all zero. It also assumes that the covariances of the mediators, a matrix in the fit of a *regmed* object, are fixed in the sem model fitting.
+
+The demonstration below shows how to setup the models for sem as well as a data set. The function *regmed.lavaan.dat* assures that x, med, y, are centered and scaled and subset to subjects without any missing data.
+
+```{r, setuplavaan}
+
+mod.best <- regmed.lavaan.model(edges.med, fit.best)
+
+mod.any <- regmed.lavaan.model(edges.any, fit.best)
+
+dat <- regmed.lavaan.dat(x1, med, y1)
+
+```
+
+The demonstration below shows how to use lavaan sem to fit specified models and view resuts
+
+```{r, fitlavaan }
+
+fit.lav.med <- sem(model=mod.best, data=dat)
+summary.lavaan(fit.lav.med)
+
+fit.lav.any <- sem(model=mod.any, data=dat)
+summary.lavaan(fit.lav.any)
+
+```
+
+*mvregmed* : Mediation model for multiple exposures, multiple mediators, and multiple outcome variables
+================================================
+
+New in version 2.0 is the multivariate version *mvregmed*, *mv* for multivariate. The user-level functions available for these are listed as follows:
+
++ `mvregmed.grid()` penalized model for grid of lambdas
++ `mvregmed.grid.bestfit()` get best fit mvregmed model from grid of fits
++ `mvregmed.fit()` fit penalized mvregmed model with specified lambda
++ `plot.mvregmed.grid()` plot results of mvregmed.grid
++ `plot.mvregmed()` plot results of a single mv regmed model fit, from either mvregmed.fit or  mvregmed.grid.bestfit
++ `mvregmed.edges()` create edges from a fit of a model for use in plotting and model fit by lavaan
++ `plot.mvregmed.edges()` plot directed graph based on edges: exposure -> mediator -> outcome
++ `regmed.lavaan.model()` setup model to estimate unpenalized parameters by lavaann sem function
++ `regmed.lavaan.dat()` setup data to input to  lavaann sem function
++ `summary.lavaan()` summarize lavaan sem model fit, which applies to both regmed.fit and mvregmed.fit runs in the lavaan::sem, because the outputs are the same.
+
+
+## Fit *mvregmed* for a grid for lambda penalties
+
+With a specified lambda.grid, fit a grid of models over the multiple exposures and mediators. We see in the summary and the plot that a lambda around 0.10 provides the best model.
+
+```{r mvfit_grid}
+fit.grid <- mvregmed.grid(x, med, y, lambda.grid)
+summary(fit.grid)
+```
+
+
+```{r plot_mvgrid}
+plot(fit.grid)
+```
+
+## Select best model from grid based on minimum BIC
+
+Choose best fit model from grid based on min BIC.
+
+```{r mvfit_best}
+mvfit.best <- mvregmed.grid.bestfit(fit.grid)
+
+```
+
+Instead of examining all contents of a model, use summary to view main non-zero parameters from alpha, beta, and delta.
+
+```{r mvfit_summary}
+summary(mvfit.best)
+```
+
+
+## Fit single *mvregmed* model with user-specified lambda
+
+Below shows how to fit a single model, and what happens with summary when all alpha, beta, and delta are 0.
+
+```{r fit_mvregmed}
+mvfit <- mvregmed.fit(x, med, y, lambda=0.5)
+summary(mvfit)
+```
+
+
+## Plot directed graph of fit model
+
+After edges are created, we use the pakage *igraph* to create plots. Because *igraph* generates graphs based on random seed, 
+it is imporatnt to set a seed  to assure the plot can be recreated. We provide the simple function *plot.mvregmed.edges* to create a basic plot.
+
+```{r plot_mvedges1}
+
+## get vertices and edges of graph 
+mvfit.edges <- mvregmed.edges(mvfit.best, eps=1e-2)
+
+plot.mvregmed.edges(mvfit.edges,
+     x.color="palegreen",y.color="palevioletred",med.color="skyblue",
+     v.size=20, seed=3)
+```
+
+To have more control of *igraph* attributes, we demonstrate below how to use our function *mvregmed.graph.attributes* to set up initial graph attributes, and then set a variety of *igraph* attributes in a standard plot function. See *igraph* for more plot attributes.
+
+```{r plot_mvedges2}
+
+gr <- regmed:::mvregmed.graph.attributes(mvfit.edges, x.color ="palegreen",
+                                      y.color="palevioletred", 
+                                      med.color="skyblue", v.size=30)
+set.seed(3);
+plot(gr$gr, vertex.size=gr$vsize, vertex.color=gr$vcol,
+          vertex.label.font=1,vertex.label.color="black", 
+          vertex.label.cex=.5,
+          edge.arrow.mode=">",edge.arrow.size=.3)
+
+```
+
+## Lavaan sem: Estimate parameters of seleted model without imposing penalty
+
+Like methods for *regmed*, we provide parallel methods for *mvregmed* that can be used to setup and fit models with lavaan sem. The 4 key steps are:
+
+* determine edges with mvregmed.edges
++ create the model with mvregmed.lavaan.model
++ setup the data with mvregmed.lavaan.dat
++ fit model with sem
+
+```{r lavaanmv}
+mvmod <- mvregmed.lavaan.model(mvfit.edges, mvfit.best)
+mvdat <- mvregmed.lavaan.dat(x, med, y)
+
+mvfit.lavaan <- sem(model=mvmod, data=mvdat)
+
+summary.lavaan(mvfit.lavaan)
+```
+
+Interpretation of lavaan output
+================================================
+
+The parameters alpha, beta, and delta are determined by regression models indicated by the tilde ($\sim$) operator, while variance and covariance parameters are indicated by the double tilder ($\sim\sim$) operator. Note that the covariance matrices for x and mediator are assumed fixed based on the values returned from *regemd* and *mvregmed*, so only variances and covariances for outcome y are provided. Also note that the z values and p-values from lavaan are marginal effects, not from a joint test of model parameters. 
+
+References
+=============================
+
+- Fan J., & Lv, J. (2008). Sure independence screening for ultrahigh dimensional feature space. J. R. Statist. Soc.B, 70, 849-911. 
+- Schaid, DJ, Sinnwell JP. (2020). Penalized models for analysis of multiple mediators. Genet Epidemiol 44:408-424.
+- Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2021). Penalized mediation models for multivariate data. Submitted, Briefings in Bioinformatics
+
+
+
+
+
+

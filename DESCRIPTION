@@ -1,25 +1,23 @@
 Package: regmed
 Type: Package
 Title: Regularized Mediation Analysis
-Version: 1.1.0
-Date: 2020-06-05
+Version: 2.0.4
+Date: 2021-04-12
 Authors@R: c(
     person("Jason", "Sinnwell", email = "sinnwell.jason@mayo.edu", comment=c(ORCID="0000-0003-1964-5522"), role = c("aut","cre"),),
-    person("Daniel", "Schaid", email = "schaid.daniel@mayo.edu", comment=c(ORCID="0000-0003-1457-6433"), role = c("aut"),),
-    person("Gregory", "Jenkins", email="jenkins.gregory@mayo.edu", comment=c(ORCID="0000-0001-6408-6227"), role=c("ctb"),))
-Description: Mediation analysis for multiple mediators by penalized structural equation models using sparse group lasso. The penalty considers the natural groupings of parameters that determine mediation, as well as encourages sparseness of the model parameters.
+    person("Daniel", "Schaid", email = "schaid.daniel@mayo.edu", comment=c(ORCID="0000-0003-1457-6433"), role = c("aut"),))
+Description: Mediation analysis for multiple mediators by penalized structural equation models with different types of penalties depending on whether there are multiple mediators and only one exposure and one outcome variable (using sparse group lasso) or multiple exposures, multiple mediators, and multiple outcome variables (using lasso, L1, penalties).
 License: GPL (>= 2)
-Depends: R (>= 3.6.0), methods, graphics, glasso
-Imports: knitr, Rcpp, RcppArmadillo
-Suggests: lavaan
+Suggests: testthat, rmarkdown
+Depends: R (>= 3.6.0), methods, graphics, glasso, igraph
+Imports: knitr, Rcpp, RcppArmadillo, lavaan
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
 VignetteBuilder: knitr
 URL: https://cran.r-project.org/package=regmed
-Packaged: 2020-06-05 16:41:58 UTC; sinnwell
+Packaged: 2021-04-12 21:03:18 UTC; sinnwell
 Author: Jason Sinnwell [aut, cre] (<https://orcid.org/0000-0003-1964-5522>),
-  Daniel Schaid [aut] (<https://orcid.org/0000-0003-1457-6433>),
-  Gregory Jenkins [ctb] (<https://orcid.org/0000-0001-6408-6227>)
+  Daniel Schaid [aut] (<https://orcid.org/0000-0003-1457-6433>)
 Maintainer: Jason Sinnwell <sinnwell.jason@mayo.edu>
 Repository: CRAN
-Date/Publication: 2020-06-05 17:50:03 UTC
+Date/Publication: 2021-04-12 21:40:02 UTC
