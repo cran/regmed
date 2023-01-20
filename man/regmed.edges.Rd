@@ -36,8 +36,7 @@ regmed.edges(fit, type="mediators", eps = 0.001)
   igraph plotting options.
 }
 \references{
- Schaid DJ,Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+   Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2022). Penalized mediation models for multivariate data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell

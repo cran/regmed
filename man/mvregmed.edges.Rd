@@ -32,8 +32,7 @@ mvregmed.edges(fit, eps = 0.001)
   coefficient values), as well as names of x, mediator, and y.
 }
 \references{
- Schaid DJ, Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+ Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2022). Penalized mediation models for multivariate data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell

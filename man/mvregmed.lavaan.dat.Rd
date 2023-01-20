@@ -8,7 +8,7 @@ Set up data to input to lavaan sem
 Set up data to input to lavaan structural equation model (sem)
 }
 \usage{
-mvregmed.lavaan.dat(x, mediator, y)
+mvregmed.lavaan.dat(x, mediator, y, max.cor=0.99)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -21,6 +21,9 @@ mvregmed.lavaan.dat(x, mediator, y)
   \item{y}{
  matrix of outcome variables
 }
+\item{max.cor}{
+  maximum correlation within mediators, so that fitting is more robust
+}
 }
 \details{
 Use the function regmed.dat.check to standardize all variables and subset to subjects without missing data
@@ -29,8 +32,7 @@ Use the function regmed.dat.check to standardize all variables and subset to sub
 A dataframe with updated x, mediator, and y
 }
 \references{
-  Schaid DJ,Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+  Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2022). Penalized mediation models for multivariate data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell

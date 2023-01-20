@@ -2,7 +2,7 @@
 
 mvregmed.grid  <- function(x, mediator, y, lambda.vec,  max.outer=5000, max.inner=2,
                           x.std=TRUE, med.std=TRUE, y.std=TRUE, step.multiplier = 0.5,
-                          print.iter = FALSE){
+                          print.iter = FALSE, max.cor=0.99){
   
   zed <- match.call()
 
@@ -22,7 +22,8 @@ mvregmed.grid  <- function(x, mediator, y, lambda.vec,  max.outer=5000, max.inne
   ## x.std: if TRUE, standardize x before analyses (center and scale by standard deviation)
   ## med.std: if TRUE, standardize mediator before analyses
   ## print.iter: if TRUE, print when each iteration of optimization is conducted (verbose output)
-
+  ## max.cor: max correlation of x, y, or mediators on input variable. Loops gets stuck of too high cor
+    
   tol <- 1e-4 
 
 
@@ -32,10 +33,12 @@ mvregmed.grid  <- function(x, mediator, y, lambda.vec,  max.outer=5000, max.inne
   if(max.outer <= 0) stop("invalid max.outer, must be > 0")
   if(length(max.inner)!=1) stop("invalid max.inner, must be scalar")
   if(max.inner <= 0) stop("invalid max.inner, must be > 0")
+  if(max.cor < .01 | max.cor > 1) stop("invalid max.cor, must be 0.01 <= max.cor <= 1")
+
 
   ### check x,y and mediator ###
 
-  checked.dat <- mvregmed.dat.check(x=x,y=y,mediator=mediator)
+  checked.dat <- mvregmed.dat.check(x=x,y=y,mediator=mediator, max.cor=max.cor)
 
   ### scale and center x,y and mediator as appropriate, initialize variables for rcpp_regmed ###
 
@@ -50,8 +53,9 @@ mvregmed.grid  <- function(x, mediator, y, lambda.vec,  max.outer=5000, max.inne
     
   for(i in 1:length(lambda.vec)){
   
-    cat("fitting grid lambda [",i,"] = ", lambda.vec[i], "\n")
-
+      if(print.iter) {
+          cat("fitting grid lambda [",i,"] = ", lambda.vec[i], "\n")
+      }
       save <- rcpp_mvregmed(alpha=inits$alpha, beta=inits$beta, delta=inits$delta,
                        varx=inits$varx, varm=inits$varm, vary=inits$vary,
                        sampcov = inits$sampcov, sample_size= inits$sampleSize,
@@ -105,7 +109,8 @@ mvregmed.grid  <- function(x, mediator, y, lambda.vec,  max.outer=5000, max.inne
 
       ## break out of loop if number of estimated parameters (df) > sample size 
       if(save$df > nrow(x)){
-          break
+          ## test by comment out below
+          ## break
           }
   }
     

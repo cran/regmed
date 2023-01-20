@@ -1,8 +1,8 @@
 mvregmed.grid.bestfit <- function(fit.grid){
 
-    if( class(fit.grid) != "mvregmed.grid"){
+    if(!("mvregmed.grid" %in%  class(fit.grid))){
         stop("object not mvregmed.grid class")
-        }
+    }
     
     bic <- fit.grid$grid.data$bic
     index <- 1:length(bic)

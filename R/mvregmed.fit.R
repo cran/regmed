@@ -1,7 +1,7 @@
 mvregmed.fit <-function(x, mediator, y, lambda, 
                         x.std =TRUE, med.std=TRUE, y.std=TRUE, max.outer=5000, max.inner=2,
                         step.multiplier = 0.5,
-                        print.iter=FALSE){
+                        print.iter=FALSE, max.cor=0.99){
   
   zed<-match.call()
  
@@ -15,18 +15,19 @@ mvregmed.fit <-function(x, mediator, y, lambda,
   ## x.std: if TRUE, standardize x before analyses (center and scale by standard deviation)
   ## med.std: if TRUE, standardize mediator before analyses
   ## print.iter: if TRUE, print when each iteration of optimization is conducted (verbose output)
-
+  ## max.cor: 0.99, if too much correltion of x, y, or meds, then inner loop tough to fit
+    
   ### check bounded parameters  
   if(lambda < 0) stop("invalid lambda, must be >= 0")
   if(length(max.outer)!=1) stop("invalid max.outer, must be scalar")
   if(max.outer <= 0) stop("invalid max.outer, must be > 0")
   if(length(max.inner)!=1) stop("invalid max.inner, must be scalar")
   if(max.inner <= 0) stop("invalid max.inner, must be > 0")
-
+  if(max.cor < 0.01 | max.cor > 1.0) stop("invalid max.cor, must be 0.01 <= max.cor <= 1") 
 
   ### check x,y and mediator ###
 
-  checked.dat <- mvregmed.dat.check(x=x,y=y,mediator=mediator)
+  checked.dat <- mvregmed.dat.check(x=x,y=y,mediator=mediator, max.cor=max.cor)
 
   ### scale and center x,y and mediator as appropriate, initialize variables for rcpp_regmed ###
 

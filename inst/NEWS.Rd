@@ -1,14 +1,21 @@
 \name{NEWS}
 \title{NEWS file for the regmed package}
+\section{Release Notes for version 2.1}{
+  \itemize{
+    \item add max.cor for maximum correlation of mediators in regmed,
+    and all x,y,mediators in mvregmed. Penalization and fitting struggle with highly correlated variables.
+    \item fix bug in mvregmed.edges when down to one row for either  alpha, beta, delta
+    \item remove procedural notes in regmed.grid and mvregmed.grid 
+  }
+}
 \section{Release Notes for version 2.0}{
   \itemize{
-    \item Add mvregmed for multiple exposures (x) and responses (y), and
-    corresponding mvregmed.grid()
-    \item Deprecate trim.best() and plot.regmed()
-    \item Add regmed.edges and mvregmed.edges
-    \item Use of edges in lavaan model and igraph plots
-    \item regmed.prefilter to guide reduction of mediators
-    \item functions to set up regmed results to run in lavaan
+    \item add mvregmed.grid and mvregmed.fit
+    \item add functions to create edges of DAG from fitted object\
+    \item add functions to plot the edges as a DAG
+    \item functions to make running and summarizing lavaan runs
+    \item updated vignette with mvregmed examples
+    \item replace trim.best functionality with pulling fit with best bic lambda
   }
 }
 \section{Release Notes for version 1.1}{

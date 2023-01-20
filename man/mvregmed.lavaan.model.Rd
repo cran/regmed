@@ -33,8 +33,7 @@ mvregmed.lavaan.model(fit.edge, fit.mvregmed)
 Text string to define a model as input to sem
 }
 \references{
-  Schaid DJ,Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+  Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2022). Penalized mediation models for multivariate data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell

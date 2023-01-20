@@ -3,7 +3,7 @@ plot.regmed.grid <- function(x, as.log=FALSE, ...){
   ## x  is output of regmed.grid
   ## log indicates if log Lambda should be plotted for mediator coefficient plot
 
-  if(class(x) != "regmed.grid") {
+  if(!("regmed.grid" %in% class(x))) {
       stop("input not regmed.grid class")
   }
     

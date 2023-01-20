@@ -3,7 +3,6 @@ summary.regmed <- function(object, ...){
   ## object is output from regmed.grid.best (i.e, a single fitted model) or 
   ## output from regmed.fit
    
-
   cat("Call:\n")
   print(object$call)
   cat("\nCoefficients:\n")  

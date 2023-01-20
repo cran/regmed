@@ -1,6 +1,5 @@
 \name{regmed.prefilter}
 \alias{regmed.prefilter}
-\alias{regmed.dat.check}
 \title{
   Prefilter to reduce the number of mediators for subsequent analyses
 }
@@ -19,7 +18,7 @@ parameters alpha and beta.
 }
 \usage{
 regmed.prefilter(x, mediator, y, k = NULL, x.std = TRUE,
-med.std = TRUE, y.std=TRUE)
+med.std = TRUE, y.std=TRUE, max.cor=0.99)
 }
 \arguments{
 \item{x}{
@@ -45,6 +44,9 @@ med.std = TRUE, y.std=TRUE)
 \item{y.std}{ 
   logical (TRUE/FALSE) whether to standardize y by dividing by standard
   devation of y. Note that y will be centered on its mean.
+}
+\item{max.cor}{
+  maximum correlation within mediators, so that fitting is more robust
 }
 }
 \value{

@@ -19,7 +19,7 @@ y: x-[delta] -> y.
 \usage{
 regmed.grid(x, mediator, y, lambda.vec, frac.lasso=0.8, max.outer=5000,
 max.inner=100, x.std=TRUE, med.std=TRUE, step.multiplier = 0.5,
-wt.delta = .5, print.iter=FALSE)
+wt.delta = .5, print.iter=FALSE, max.cor=0.99)
 }
 \arguments{
   \item{x}{
@@ -70,6 +70,9 @@ a value between 0 and 1 for backtracking, to shrink step size. Value of
 }
   \item{print.iter}{
 print iteration history during fitting routine 
+}
+\item{max.cor}{
+   maximum correlation within mediators, so fitting is more robust
 }
 }
 \details{

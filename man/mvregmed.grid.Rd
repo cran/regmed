@@ -12,7 +12,7 @@ model
 \usage{
 mvregmed.grid(x, mediator, y, lambda.vec, max.outer = 5000,
 max.inner = 2, x.std = TRUE, med.std = TRUE, y.std = TRUE,
-step.multiplier = 0.5, print.iter = FALSE)
+step.multiplier = 0.5, print.iter = FALSE, max.cor=0.99)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -53,15 +53,17 @@ step.multiplier = 0.5, print.iter = FALSE)
     0.5 works well.
 }
 \item{print.iter}{
-    print iteration number during fitting routine
-  } 
+  print iteration number during fitting routine
+}
+\item{max.cor}{
+  maximum correlation within y, x, or mediators, so fitting is more robust
+}
 }
 \value{
 An object of class mvregmed.grid
 }
 \references{
-  Schaid DJ,Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+  Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2022). Penalized mediation models for multivariate data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell

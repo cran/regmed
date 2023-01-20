@@ -1,7 +1,7 @@
 regmed.fit <- function(x, mediator, y, lambda, frac.lasso=.8, 
          x.std =TRUE, med.std=TRUE, max.outer=5000, max.inner=100,
          step.multiplier = 0.5, wt.delta = .5,
-         print.iter=FALSE){
+         print.iter=FALSE, max.cor=0.99){
   
   zed<-match.call()
  
@@ -27,6 +27,8 @@ regmed.fit <- function(x, mediator, y, lambda, frac.lasso=.8,
   if(max.outer <= 0) stop("invalid max.outer, must be > 0")
   if(length(max.inner)!=1) stop("invalid max.inner, must be scalar")
   if(max.inner <= 0) stop("invalid max.inner, must be > 0")
+  if(max.cor < .01 | max.cor > 1) stop("invalid max.cor, must be 0.01 <= max.cor <= 1")
+
 
 
   ### check x,y and mediator ###
@@ -35,7 +37,7 @@ regmed.fit <- function(x, mediator, y, lambda, frac.lasso=.8,
 
   ### scale and center x,y and mediator as appropriate, initialize variables for rcpp_regmed ###
 
-  inits<- regmed.init(dat.obj=checked.dat,x.std=x.std, med.std=med.std)
+  inits <- regmed.init(dat.obj=checked.dat,x.std=x.std, med.std=med.std)
  
   ### fit regmed ###
 

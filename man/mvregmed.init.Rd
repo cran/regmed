@@ -42,15 +42,15 @@ matrices alpha, beta, and delta are created (all intital values = 0).
 A list of items used as input to model fitting.
 }
 \references{
-  Schaid DJ,Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+  Schaid DS, Dikilitas O, Sinnwell JP, Kullo I (2022). Penalized
+  mediation models for multivariate data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell
 }
 \seealso{
   \code{\link{mvregmed.fit}}
-   \code{\link{mvregmed.grid}}
+  \code{\link{mvregmed.grid}}
  
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

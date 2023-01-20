@@ -1,7 +1,8 @@
-regmed.grid <- function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=5000, max.inner=100,
-                        x.std=TRUE, med.std=TRUE,  step.multiplier = 0.5, wt.delta = .5, print.iter = FALSE){
+regmed.grid <- function(x, mediator, y, lambda.vec, frac.lasso = 0.8,
+                        max.outer=5000, max.inner=100, x.std=TRUE, med.std=TRUE,
+                        step.multiplier = 0.5, wt.delta = .5, print.iter = FALSE, max.cor=0.99){
  
-  zed<-match.call()
+  zed <- match.call()
   
   ## ----------input parameters
   ## x:  vector of exposure variable
@@ -30,11 +31,11 @@ regmed.grid <- function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=
   if(max.outer <= 0) stop("invalid max.outer, must be > 0")
   if(length(max.inner)!=1) stop("invalid max.inner, must be scalar")
   if(max.inner <= 0) stop("invalid max.inner, must be > 0")
-
+  if(max.cor < .01 | max.cor > 1) stop("invalid max.cor, must be 0.01 <= max.cor <= 1")
 
   ### check x,y and mediator ###
 
-  checked.dat<- regmed.dat.check(x=x,y=y,mediator=mediator)
+  checked.dat<- regmed.dat.check(x=x,y=y,mediator=mediator, max.cor=max.cor)
 
   ### scale and center x,y and mediator as appropriate, initialize variables for rcpp_regmed ###
 
@@ -46,9 +47,10 @@ regmed.grid <- function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=
   fit.lst <- vector("list", length=length(lambda.vec))
 
   for(i in 1:length(lambda.vec)){
-  
-    cat("fitting grid lambda [",i,"] = ", lambda.vec[i], "\n")
 
+    if(print.iter) {
+        cat("fitting grid lambda [",i,"] = ", lambda.vec[i], "\n")
+    }
     save <- rcpp_regmed(alpha=inits$Alpha, beta=inits$Beta, delta=inits$Delta,
                         vary = inits$vary, varx = inits$varx, SampCov = inits$SampCov,
                         inits$MedCov, inits$sampleSize, fracLasso = frac.lasso,
@@ -57,7 +59,6 @@ regmed.grid <- function(x, mediator, y, lambda.vec, frac.lasso = 0.8, max.outer=
                         tol=1e-6,vary_step_size = inits$vary.step.size,
                         step_multiplier = step.multiplier,
                         verbose=print.iter)
-
 
     ### zero out alphas/betas if they are sufficiently close to 0, based on tol parameter ###    
 

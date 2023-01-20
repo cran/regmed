@@ -1,5 +1,6 @@
 \name{mvregmed.dat.check}
 \alias{mvregmed.dat.check}
+\alias{regmed.dat.check}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Helper function to check x, y, mediator for input to mvregmed functions 
@@ -9,7 +10,7 @@ Assure that x, y, mediator are matrices, check column names and fill in
 if NULL, and reduce x, y, mediator so no missing values among all three matrices.
 }
 \usage{
-mvregmed.dat.check(x, y, mediator)
+mvregmed.dat.check(x, y, mediator, max.cor=0.99)
 }
 
 \arguments{
@@ -21,7 +22,10 @@ mvregmed.dat.check(x, y, mediator)
 }
   \item{mediator}{
     matrix with columns representing mediator variables
-}
+  }
+  \item{max.cor}{
+    maximum correlation within y, x, or mediators, so fitting is more robust
+  }
 }
 \value{
 list with updated x, y, mediator

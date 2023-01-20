@@ -16,7 +16,7 @@ Multivariate regularized mediation model
 \usage{
 mvregmed.fit(x, mediator, y, lambda, x.std = TRUE, med.std = TRUE,
 y.std = TRUE, max.outer = 5000, max.inner = 2, step.multiplier = 0.5,
-print.iter = FALSE)
+print.iter = FALSE, max.cor=0.99)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -59,14 +59,17 @@ print.iter = FALSE)
 }
   \item{print.iter}{
     print iteration number during fitting routine
-}
+  }
+  \item{max.cor}{
+    maximum correlation within y, x, or mediators, so fitting is more robust
+  }
 }
 \value{
   An object of class mvregmed
 }
 \references{
-  Schaid DJ, Dikilitas O, Sinnwell JP,  Kullo I. Penalized Mediation
- Models for Multivariate Data. Submitted, 2021.
+  Schaid DJ, Dikilitas O, Sinnwell JP,  Kullo I (2022). Penalized Mediation
+ Models for Multivariate Data. Genet Epidemiol 46:32-50.
 }
 \author{
 Daniel Schaid and Jason Sinnwell

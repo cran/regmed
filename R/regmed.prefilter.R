@@ -1,7 +1,7 @@
 ## Pre-filter mediators  on N subjects to K < N/2, or user threshold
 
 regmed.prefilter <- function(x, mediator, y, k=NULL, x.std=TRUE,
-                             med.std=TRUE, y.std=TRUE) {
+                             med.std=TRUE, y.std=TRUE, max.cor=0.99) {
 
     ## x exposure (numeric)
     ## mediator (numeric)
@@ -10,8 +10,8 @@ regmed.prefilter <- function(x, mediator, y, k=NULL, x.std=TRUE,
     ## return list of x, y, mediator that is subset to k <= n/2 mediators,
     ## all subset to complete non-missings
     
-    ## handle missings
-    checked.dat <- regmed.dat.check(x = x, y = y, mediator = mediator)
+    ## handle missings and too high of correlations
+    checked.dat <- regmed.dat.check(x = x, y = y, mediator = mediator, max.cor=max.cor)
 
     y.std <- scale(checked.dat$y, center=TRUE, scale=y.std)
     x.std <- scale(checked.dat$x, center=TRUE, scale=x.std)

@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // rcpp_mvregmed
 List rcpp_mvregmed(arma::mat alpha, arma::mat beta, arma::mat delta, arma::mat varx, arma::mat varm, arma::mat vary, arma::mat sampcov, double sample_size, double lambda, int max_iter, int max_iter_inner, double tol, double vary_step_size, double step_multiplier, bool verbose);
 RcppExport SEXP _regmed_rcpp_mvregmed(SEXP alphaSEXP, SEXP betaSEXP, SEXP deltaSEXP, SEXP varxSEXP, SEXP varmSEXP, SEXP varySEXP, SEXP sampcovSEXP, SEXP sample_sizeSEXP, SEXP lambdaSEXP, SEXP max_iterSEXP, SEXP max_iter_innerSEXP, SEXP tolSEXP, SEXP vary_step_sizeSEXP, SEXP step_multiplierSEXP, SEXP verboseSEXP) {

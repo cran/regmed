@@ -2,7 +2,7 @@ regmed.grid.bestfit <- function(fit.grid){
   ## input:
   ## fit.grid is output of regmed.grid
     
-  if(class(fit.grid) != "regmed.grid") {
+  if(!("regmed.grid" %in% class(fit.grid))) {
       stop("input not regmed.grid class")
   }
     

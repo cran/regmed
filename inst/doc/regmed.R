@@ -3,25 +3,19 @@ knitr::opts_chunk$set(echo = TRUE,
     fig.width=7, fig.height=6,
    tidy.opts=list(width.cutoff=100), tidy=TRUE, comment=NA)
 
-## set lib path in R (below), 
-#.libPaths(c("/projects/bsi/pharmacogenetics/s212953.SchaidMethods/Regmed/Version.2/Rlib362", .libPaths()))
-## or with or with R_LIBS env variable
-## linux: export R_LIBS=/projects/bsi/pharmacogenetics/s212953.SchaidMethods/Regmed/Version.2/Rlib362
-library(igraph)
-library(lavaan)
-library(glasso)
-library(regmed)
+require(regmed)
+
 
 ## ---- medsim------------------------------------------------------------------
 data(medsim)
 
-
 ## ---- filtermediate-----------------------------------------------------------
 dat.filter <- regmed.prefilter(x[,1], med, y[,1], k=10)
+colnames(dat.filter$mediator)
 
 ## ----set_grid-----------------------------------------------------------------
 
-lambda.grid <- seq(from=.4, to=.01, by=-.01)
+lambda.grid <- seq(from=.4, to=.01, by=-.05)
 
 x1 <- dat.filter$x
 y1 <- dat.filter$y
@@ -31,6 +25,7 @@ fit.grid <- regmed.grid(x1, med, y1, lambda.grid, frac.lasso=.8)
 
 
 ## ---- methodsgrid-------------------------------------------------------------
+print(fit.grid)
 plot.regmed.grid(fit.grid)
 
 ## ---- fitbest-----------------------------------------------------------------
@@ -54,19 +49,19 @@ plot.regmed.edges(edges.any)
 
 ## ---- setuplavaan-------------------------------------------------------------
 
+dat <- regmed.lavaan.dat(x1, med, y1)
+
 mod.best <- regmed.lavaan.model(edges.med, fit.best)
 
 mod.any <- regmed.lavaan.model(edges.any, fit.best)
 
-dat <- regmed.lavaan.dat(x1, med, y1)
-
 
 ## ---- fitlavaan---------------------------------------------------------------
 
-fit.lav.med <- sem(model=mod.best, data=dat)
+fit.lav.med <- lavaan:::sem(model=mod.best, data=dat)
 summary.lavaan(fit.lav.med)
 
-fit.lav.any <- sem(model=mod.any, data=dat)
+fit.lav.any <- lavaan:::sem(model=mod.any, data=dat)
 summary.lavaan(fit.lav.any)
 
 
@@ -80,18 +75,19 @@ plot(fit.grid)
 ## ----mvfit_best---------------------------------------------------------------
 mvfit.best <- mvregmed.grid.bestfit(fit.grid)
 
-
 ## ----mvfit_summary------------------------------------------------------------
 summary(mvfit.best)
+mvedges <- mvregmed.edges(mvfit.best)
+plot(mvedges)
 
 ## ----fit_mvregmed-------------------------------------------------------------
-mvfit <- mvregmed.fit(x, med, y, lambda=0.5)
-summary(mvfit)
+mvfit <- mvregmed.fit(x, med, y, lambda=0.4)
+summary.mvregmed(mvfit, eps=0.01)
 
 ## ----plot_mvedges1------------------------------------------------------------
 
 ## get vertices and edges of graph 
-mvfit.edges <- mvregmed.edges(mvfit.best, eps=1e-2)
+mvfit.edges <- mvregmed.edges(mvfit.best, eps=5e-2)
 
 plot.mvregmed.edges(mvfit.edges,
      x.color="palegreen",y.color="palevioletred",med.color="skyblue",
@@ -99,12 +95,12 @@ plot.mvregmed.edges(mvfit.edges,
 
 ## ----plot_mvedges2------------------------------------------------------------
 
-gr <- regmed:::mvregmed.graph.attributes(mvfit.edges, x.color ="palegreen",
+gr <- regmed:::mvregmed.graph.attributes(mvfit.edges, x.color ="limegreen",
                                       y.color="palevioletred", 
-                                      med.color="skyblue", v.size=30)
+                                      med.color="royalblue", v.size=40)
 set.seed(3);
 plot(gr$gr, vertex.size=gr$vsize, vertex.color=gr$vcol,
-          vertex.label.font=1,vertex.label.color="black", 
+          vertex.label.font=2,vertex.label.color="black", 
           vertex.label.cex=.5,
           edge.arrow.mode=">",edge.arrow.size=.3)
 
@@ -113,7 +109,7 @@ plot(gr$gr, vertex.size=gr$vsize, vertex.color=gr$vcol,
 mvmod <- mvregmed.lavaan.model(mvfit.edges, mvfit.best)
 mvdat <- mvregmed.lavaan.dat(x, med, y)
 
-mvfit.lavaan <- sem(model=mvmod, data=mvdat)
+mvfit.lavaan <- lavaan:::sem(model=mvmod, data=mvdat)
 
 summary.lavaan(mvfit.lavaan)
 

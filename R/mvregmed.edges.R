@@ -17,7 +17,7 @@ mvregmed.edges <- function(fit, eps = 1e-3) {
     
     if(nrow(mat) > 0){
         ord <- order(mat[,1], mat[,2])
-        mat <- mat[ord,]
+        mat <- mat[ord,,drop=FALSE]
 
         a.df <- data.frame(mediator=rownames(fit$alpha)[mat[,1]],
                            x=colnames(fit$alpha)[mat[,2]],
@@ -32,7 +32,7 @@ mvregmed.edges <- function(fit, eps = 1e-3) {
     
     if(nrow(mat) > 0){
         ord <- order(mat[,1], mat[,2])
-        mat <- mat[ord,]
+        mat <- mat[ord,,drop=FALSE]
     
         d.df <- data.frame(y=rownames(fit$delta)[mat[,1]],
                            x=colnames(fit$delta)[mat[,2]],
@@ -46,7 +46,7 @@ mvregmed.edges <- function(fit, eps = 1e-3) {
                  col(fit$beta)[abs(fit$beta) > eps])
     if(nrow(mat) > 0){
         ord <- order(mat[,1], mat[,2])
-        mat <- mat[ord,]
+        mat <- mat[ord,,drop=FALSE]
     
         b.df <- data.frame(y=rownames(fit$beta)[mat[,1]],
                            mediator=colnames(fit$beta)[mat[,2]],

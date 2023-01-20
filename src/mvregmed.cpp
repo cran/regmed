@@ -619,10 +619,17 @@ void print_vec(arma::vec x){
   }
   return;
 }
-void print_mat(arma::mat &x){
 
-  for(int i = 0; i < x.n_rows; i++){
-    for(int j = 0; j < x.n_cols; j++){
+//updated by DJS 9/2022 
+void print_mat(arma::mat &x){
+  int nr, nc;
+  nr = x.n_rows;
+  if(nr > 5) { nr = 5 ;}
+  nc = x.n_cols;
+  if(nc > 5){nc = 5;}
+
+  for(int i = 0; i < nr; i++){
+    for(int j = 0; j < nc; j++){
       Rcout <<  x(i,j)  << ", ";
     }
     Rcout << endl;
@@ -652,582 +659,610 @@ List rcpp_mvregmed(
             double step_multiplier = .5,
             bool verbose = false) {
 
-    // fit structural equation model with lasso penalties on
-    // alpha, beta, delta, but no penalties on vary
-
-     //------------ define parameters/variables
-     
-    // pen below are used to weight lamdba for different number of
-    // params for alpha/beta/delta, because without these weights,
-    // find alpha's are selected more frequently than betas and deltas
-    // presumably because there can be many more alphas than other params
+  // fit structural equation model with lasso penalties on
+  // alpha, beta, delta, but no penalties on vary
+  
+  //------------ define parameters/variables
+  
+  // pen below are used to weight lamdba for different number of
+  // params for alpha/beta/delta, because without these weights,
+  // find alpha's are selected more frequently than betas and deltas
+  // presumably because there can be many more alphas than other params
     
   double pen_alpha = pow( (alpha.n_rows * alpha.n_cols), 0.4);
   double pen_beta  = pow( (beta.n_rows * beta.n_cols),   0.4);
   double pen_delta = pow( (delta.n_rows * delta.n_cols), 0.4);
    
-    int iter_inner = 0;
-    int index_i = 0;
-    int index_j = 0;
+  int iter_inner = 0;
+  int index_i = 0;
+  int index_j = 0;
 
-    double gradient;
-     
-    double diff2 = 0.0;
-    double gdiff = 0.0;
-    double grad_delta = 0.0;
-    double grad_old = 0.0;
-    
-    double param_old = 0.0;
-    double param_new = 0.0;
-    double param_diff = 0.0;
-    double loss_majorize = 0.0;
-    double loss_old = 0.0;
-    double loss_new = 0.0;
-    double pen_loss_begin = 0.0;
-    double pen_loss_new = 0.0;
-    double pen_loss_old = 0.0;
-    double pen_loss_end = 0.0;
-    double step = 0.5;             // init step size for alpha, beta, delta
-    double step_mult_vary = 0.25;   // init step size for vary
-   
-    bool converge = false;          // logical for global converge
-    bool converge_inner = false;    // logical for inner-loop converge
-
-    bool debug1 = false;
-    bool debug2 = false;
-     
-    
-    
-    //------------- Initial computations before loops
+  double gradient;
   
-    arma::mat ImpCov(size(sampcov), fill::zeros);
-
-    //  S matrix arranged as (varx, 0..0,     0
-    //                        0,    varm,     0
-    //                        0,    0..0,  vary)
-
-    // S has dim nx + mn + nt
-    // nx = number of instrumental variables (exposures, SNPs, other aliases)
-    // nm = number of mediators
-    // nt = number of traits
-
-    int nx = varx.n_rows;
-    int nm = varm.n_rows;
-    int nt = vary.n_rows;
-
-    arma::mat S = blockDiag(varx, varm, vary);
-
+  double diff2 = 0.0;
+  double gdiff = 0.0;
+  double grad_delta = 0.0;
+  double grad_old = 0.0;
   
-    arma::mat varx_inv = pinv(varx);
-    arma::mat varm_inv = pinv(varm);
-    arma::mat vary_inv = pinv(vary);
-    
-    // B = inv(I-A)
-    arma::mat B = compute_B(alpha, beta, delta);
+  double param_old = 0.0;
+  double param_new = 0.0;
+  double param_diff = 0.0;
+  double loss_majorize = 0.0;
+  double loss_old = 0.0;
+  double loss_new = 0.0;
+  double pen_loss_begin = 0.0;
+  double pen_loss_new = 0.0;
+  double pen_loss_old = 0.0;
+  double pen_loss_end = 0.0;
+  double step = 0.5;              // init step size for alpha, beta, delta
+  double step_mult_vary = 0.25;   // init step size for vary
+  
+  bool converge = false;          // logical for global converge
+  bool converge_inner = false;    // logical for inner-loop converge
+  
+  bool debug1 = false;
+  bool debug2 = false;
+     
+  
+  
+  //------------- Initial computations before loops
+  
+  arma::mat ImpCov(size(sampcov), fill::zeros);
+  
+  //  S matrix arranged as (varx, 0..0,     0
+  //                        0,    varm,     0
+  //                        0,    0..0,  vary)
+  
+  // S has dim nx + mn + nt
+  // nx = number of instrumental variables (exposures, SNPs, other aliases)
+  // nm = number of mediators
+  // nt = number of traits
+  
+  int nx = varx.n_rows;
+  int nm = varm.n_rows;
+  int nt = vary.n_rows;
+  
+  arma::mat S = blockDiag(varx, varm, vary);
+  
+  
+  arma::mat varx_inv = pinv(varx);
+  arma::mat varm_inv = pinv(varm);
+  arma::mat vary_inv = pinv(vary);
+  
+  // B = inv(I-A)
+  arma::mat B = compute_B(alpha, beta, delta);
+  
+  // compute implied cov
+  ImpCov = B * S * B.t();
+  
+  double logdet_varx = logdet_Var(varx);
+  double logdet_varm = logdet_Var(varm);
+  double logdet_sum = logdet_varx + logdet_varm;
+  double logdet_ImpCov = logdet_sum + logdet_Var(vary);
+  
+  arma::mat ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+  loss_old = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+  
+  pen_loss_old = loss_old + penalty(alpha, beta, delta, lambda);
+  pen_loss_begin = pen_loss_old;
+  
+  //----------------  outer loop for all parameters
+  
+  // init for outer loop
+  
+  int iter = 0;         
+  converge = false;
 
-    // compute implied cov
-    ImpCov = B * S * B.t();
-
-    double logdet_varx = logdet_Var(varx);
-    double logdet_varm = logdet_Var(varm);
-    double logdet_sum = logdet_varx + logdet_varm;
-    double logdet_ImpCov = logdet_sum + logdet_Var(vary);
-
-    arma::mat ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-    loss_old = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-
-    pen_loss_old = loss_old + penalty(alpha, beta, delta, lambda);
-    pen_loss_begin = pen_loss_old;
-
-    //----------------  outer loop for all parameters
-    
-    // init for outer loop
-    
-    int iter = 0;         
-    converge = false;
-
-    while ((iter <= max_iter) & !converge) {
+  while ((iter < max_iter) & !converge) {
             
-        iter ++;
-        if(debug1) {
-            Rcout << "iter = " << iter << endl;
-            Rcout << "alpha:" << endl;
-            print_mat(alpha);
-        }
+    iter ++;
+    if(debug1) {
+      Rcout << "iter = " << iter << endl;
+      Rcout << "alpha:" << endl;
+      print_mat(alpha);
+    }
         
-       
-        if (verbose & ((iter % 100) == 0)) Rcout << "iter = " << iter << endl;
-
-        //============================== update alpha's ======================================//
-
-        for (int i_alpha = 0; i_alpha < alpha.n_rows; i_alpha++) {
-            for (int j_alpha = 0; j_alpha < alpha.n_cols; j_alpha++) {
-
-                if (debug1) {
-                    Rcout << "alpha inner loop" << endl;
-                    Rcout << "======= alpha ===========" << endl;
-                    print_mat(alpha);
-                    //Rcout << "======= beta ===========" << endl;
-                    //print_mat(beta);
-                    //Rcout << "======= delta ===========" << endl;
-                    //print_mat(delta);
-                    //Rcout << "======= vary ===========" << endl;
-                   //print_mat(vary);
-                    Rcout << "begin inner loop loss old = " << loss_old << endl;
-                }
+    
+    // old: if (verbose & ((iter % 10) == 0)) Rcout << "iter = " << iter << endl;
+    if (verbose) Rcout << "iter = " << iter << endl;
+    
+    //============================== update alpha's ======================================//
+    
+    if (verbose) Rcout << "   update alpha"  << endl;
+    
+    for (int i_alpha = 0; i_alpha < alpha.n_rows; i_alpha++) {
+      for (int j_alpha = 0; j_alpha < alpha.n_cols; j_alpha++) {
+	
+	if (debug1) {
+	  Rcout << "alpha inner loop" << endl;
+	  Rcout << "======= alpha ===========" << endl;
+	  print_mat(alpha);
+	  //Rcout << "======= beta ===========" << endl;
+	  //print_mat(beta);
+	  //Rcout << "======= delta ===========" << endl;
+	  //print_mat(delta);
+	  //Rcout << "======= vary ===========" << endl;
+	  //print_mat(vary);
+	  Rcout << "begin inner loop loss old = " << loss_old << endl;
+	}
                 
-                // inner loop to optimize over a single alpha parameter
+	// inner loop to optimize over a single alpha parameter
+	
+	iter_inner = 0;
+	converge_inner = false;
+	while ((iter_inner < max_iter_inner) &&  !converge_inner) {
 
-                iter_inner = 0;
-                converge_inner = false;
-                while ((iter_inner < max_iter_inner) &&  !converge_inner) {
-
-                    param_old = alpha(i_alpha, j_alpha);
+	  param_old = alpha(i_alpha, j_alpha);
                     
                     
-                    // index_i, index_j are indices where alpha's occur in the
-                    // Asymetric A matrix; nx = number of "exposure" variables
+	  // index_i, index_j are indices where alpha's occur in the
+	  // Asymetric A matrix; nx = number of "exposure" variables
                     
-                    index_i = nx + i_alpha;
-                    index_j = j_alpha;
-
-		    // update gradient of A matrix wrt alpha param
- 
-                    // old gradient =  grad_Amat(index_i, index_j, alpha, beta, delta, sampcov, S, varx_inv, varm_inv, vary_inv);
-                    gradient= grad_AmatV2(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv,
-                                             varx, varm, vary);
+	  index_i = nx + i_alpha;
+	  index_j = j_alpha;
+	  
+	  // update gradient of A matrix wrt alpha param
+	  
+	  // old gradient =  grad_Amat(index_i, index_j, alpha, beta, delta, sampcov, S, varx_inv, varm_inv, vary_inv);
+	  gradient= grad_AmatV2(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv,
+				varx, varm, vary);
                           
-                    if (debug1) {
-                        Rcout << "alpha[" << i_alpha << ", " << j_alpha << "] old: ";
-                        Rcout << " param " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
-                    }
-        
-                    // optimize step size
-                    
-                    step = 0.5;
-                    for (int i = 0; i < 10; i++) {
+	  if (debug1) {
+	    Rcout << "alpha[" << i_alpha << ", " << j_alpha << "] old: ";
+	    Rcout << " param " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
+	  }
+	  
+	  // optimize step size
+          
+	  step = 0.5;
+	  for (int i = 0; i < 10; i++) {
 
-                        param_new = update_param(gradient, param_old, step, lambda*pen_alpha);
-                        alpha(i_alpha, j_alpha) = param_new;
+	    param_new = update_param(gradient, param_old, step, lambda*pen_alpha);
+	    alpha(i_alpha, j_alpha) = param_new;
 
-                        // When alpha is updated, the following should be updated:
-                        ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                        loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	    // When alpha is updated, the following should be updated:
+	    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	    
+	    param_diff = param_new - param_old;
+	    gdiff = gradient * param_diff;
+	    diff2 = param_diff * param_diff;
+	    loss_majorize = loss_old + gdiff + diff2 / (2.0 * step);
 
-                        param_diff = param_new - param_old;
-                        gdiff = gradient * param_diff;
-                        diff2 = param_diff * param_diff;
-                        loss_majorize = loss_old + gdiff + diff2 / (2.0 * step);
+	    if (debug1) {
+	      Rcout << "step = " << step << ", alpha[" << i_alpha << ", " << j_alpha << "]";
+	      Rcout << " = " << param_new << ", loss new = " << loss_new;
+	      Rcout << ", loss maj = " << loss_majorize;
+	      Rcout << ", diff^2/(2*step) = " << diff2 / (2.0 * step)  << endl;
+	    }
 
-                        if (debug1) {
-                            Rcout << "step = " << step << ", alpha[" << i_alpha << ", " << j_alpha << "]";
-                            Rcout << " = " << param_new << ", loss new = " << loss_new;
-                            Rcout << ", loss maj = " << loss_majorize;
-                            Rcout << ", diff^2/(2*step) = " << diff2 / (2.0 * step)  << endl;
-                        }
+	    if (loss_new <= loss_majorize) {
+	      if(debug1) Rcout << "alpha break" << endl;
+	      break;
+	    }
+	    
+	    step = step_multiplier * step;
+	    
+	  } // end of step optimization
 
-                        if (loss_new <= loss_majorize) {
-                            if(debug1) Rcout << "alpha break" << endl;
-                            break;
-                        }
-
-                        step = step_multiplier * step;
-
-                    } // end of step optimization
-
-                    // if after step opt, loss_new > loss_majorize revert to parma_old
-                    if(loss_new > loss_majorize){
-                        alpha(i_alpha, j_alpha) = param_old;
-                    }
+	  // if after step opt, loss_new > loss_majorize revert to parma_old
+	  if(loss_new > loss_majorize){
+	    alpha(i_alpha, j_alpha) = param_old;
+	  }
                 
+	  
 
-                    // When alpha is updated, the following should be updated:
-                    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	  // When alpha is updated, the following should be updated:
+	  ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	  
+	  loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	  
+	  // check convergence
+	  pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
 
-                    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-
-                    // check convergence
-                    pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
-
-                    if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
-                        converge_inner = true;
-                    }
-
-                    pen_loss_old = pen_loss_new;
-                    loss_old = loss_new;
-                    iter_inner++;
-
-                } // end inner loop
-
-            }
-        }
-
-    
-        //============================== update beta's ======================================//
-
-        for (int i_beta = 0; i_beta < beta.n_rows; i_beta++) {
-            for (int j_beta = 0; j_beta < beta.n_cols; j_beta++) {
-
-                if (debug2) {
-                    Rcout << "beta inner loop" << endl;
-                    Rcout << "======= alpha ===========" << endl;
-                    print_mat(alpha);
-                    Rcout << "======= beta ===========" << endl;
-                    print_mat(beta);
-                    Rcout << "======= delta ===========" << endl;
-                    print_mat(delta);
-                    Rcout << "======= vary ===========" << endl;
-                    print_mat(vary);
-                    Rcout << "begin inner loop loss old = " << loss_old << endl;
-                }
-                
-                // inner loop to optimize over a single beta parameter
-
-                iter_inner = 0;
-                converge_inner = false;
-                while ((iter_inner < max_iter_inner) &&  !converge_inner) {
-
-                    param_old = beta(i_beta, j_beta);
-                    // index_i, index_j indices for beta's in Asymmetric A matrix
-                    index_i = nx + nm + i_beta;
-                    index_j = nx + j_beta;
-
-                    // old gradient = grad_Amat(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv);
-                    gradient= grad_AmatV2(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv,
-                                             varx, varm, vary);
-                  
-                    if (debug2) {
-                        Rcout << "beta[" << i_beta << ", " << j_beta << "] old: ";
-                        Rcout << " = " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
-                    }
-                    
-                    // optimize step size
-                    step = 0.5;
-                    for (int i = 0; i < 10; i++) {
-
-                        param_new = update_param(gradient, param_old, step, lambda*pen_beta);
-                        beta(i_beta, j_beta) = param_new;
-
-                        // When beta is updated, the following should be updated:
-                        ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                        loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-
-                        param_diff = param_new - param_old;
-                        gdiff = gradient * param_diff;
-                        diff2 = param_diff * param_diff;
-                        loss_majorize = loss_old + gdiff + diff2 / (2.0 * step);
-
-                        if (debug2) {
-                            Rcout << "step beta[" << i_beta << ", " << j_beta << "] ";
-                            Rcout << " = " << param_new << ", loss new = " << loss_new << ", loss maj = " << loss_majorize << endl;
-                        }
-                        if (loss_new <= loss_majorize) {
-                            if(debug2) Rcout << "beta break" << endl;
-                            break;
-                        }
-
-                        step = step_multiplier * step;
-
-                    } // end of step optimization
-
-                    
-                    // if after step opt, loss_new > loss_majorize revert to parma_old
-                    if(loss_new > loss_majorize){
-                        beta(i_beta, j_beta) = param_old;
-                    }
-     
-                    // When beta is updated, the following should be updated:
-                    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-
-                    // check convergence
-                    pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
-
-                    if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
-                        converge_inner = true;
-                    }
-
-                    pen_loss_old = pen_loss_new;
-                    loss_old = loss_new;
-                    iter_inner++;
-
-                } // end inner loop
-
-            }
-        }
-   
-   
-        //============================== update delta's ======================================//
-
-        for (int i_delta = 0; i_delta < delta.n_rows; i_delta++) {
-            for (int j_delta = 0; j_delta < delta.n_cols; j_delta++) {
-
-                if (debug2) {
-                    Rcout << "delta inner loop" << endl;
-                    Rcout << "======= alpha ===========" << endl;
-                    print_mat(alpha);
-                    Rcout << "======= beta ===========" << endl;
-                    print_mat(beta);
-                    Rcout << "======= delta ===========" << endl;
-                    print_mat(delta);
-                    Rcout << "======= vary ===========" << endl;
-                    print_mat(vary);
-                    Rcout << "begin inner loop loss old = " << loss_old << endl;
-                }
-                
-                iter_inner = 0;
-                converge_inner = false;
-                while ((iter_inner < max_iter_inner) &&  !converge_inner) {
-
-                    param_old = delta(i_delta, j_delta);
-                    
-                    // index_i, index_j are indices for where delta's occur
-                    // in Asymmetric A matrix
-                    
-                    index_i = nx + nm + i_delta;
-                    index_j = j_delta;
-                    
-                    // gradient of A matrix wrt to delta's
-                    // old gradient = grad_Amat(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv);
-                    gradient= grad_AmatV2(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv,
-                                             varx, varm, vary);
-                  
-                    if (debug2) {
-                        Rcout << "delta[" << i_delta << ", " << j_delta << "] old: ";
-                        Rcout << " param " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
-                    }
-                    
-                    // optimize step size
-
-                    step = 0.5;
-                    for (int i = 0; i < 10; i++) {
-
-                        param_new = update_param(gradient, param_old, step, lambda*pen_delta);
-                        delta(i_delta, j_delta) = param_new;
-
-                        // When delta is updated, the following should be updated:
-                        ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                        loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-
-                        param_diff = param_new - param_old;
-                        gdiff = gradient * param_diff;
-                        diff2 = param_diff * param_diff;
-                        loss_majorize = loss_old + gdiff + diff2 / (2.0 * step);
-
-                        if (debug2) {
-                            Rcout << "step delta[" << i_delta << ", " << j_delta << "] ";
-                            Rcout << " = " << param_new << ", loss new = " << loss_new << ", loss maj = " << loss_majorize << endl;
-                        }
-                        
-                        if (loss_new <= loss_majorize) {
-                            if(debug2) Rcout << "delta break" << endl;
-                            break;
-                        }
-
-                        step = step_multiplier * step;
-
-                    } // end of step optimization
-
-                    // if after step opt, loss_new > loss_majorize revert to parma_old
-                    if(loss_new > loss_majorize){
-                        delta(i_delta, j_delta) = param_old;
-                    }
-     
-                    // When delta is updated, the following should be updated:
-                   ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                   loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-
-                    // check convergence
-                    pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
-
-                    if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
-                        converge_inner = true;
-                    }
-
-                    pen_loss_old = pen_loss_new;
-                    loss_old = loss_new;
-                    iter_inner++;
-
-                } // end inner loop for delta
-            }
-        }
-
-    
-    //============================== update vary's ======================================//
-      
-        // note that loops cover upper triangle of vary
-
-        for (int i_vary = 0; i_vary < vary.n_rows; i_vary++) {
-            for (int j_vary = i_vary; j_vary < vary.n_cols; j_vary++) {
-
-                if (debug2) {
-                    Rcout << "vary inner loop" << endl;
-                    Rcout << "======= alpha ===========" << endl;
-                    print_mat(alpha);
-                    Rcout << "======= beta ===========" << endl;
-                    print_mat(beta);
-                    Rcout << "======= delta ===========" << endl;
-                    print_mat(delta);
-                    Rcout << "======= vary ===========" << endl;
-                    print_mat(vary);
-                    Rcout << "begin inner loop loss old = " << loss_old << endl;
-                }
-                
-                // inner loop to optimize over a single parameter
-
-                iter_inner = 0;
-                converge_inner = false;
-                
-                while ((iter_inner < max_iter_inner) &&  !converge_inner) {
-                    
-                    iter_inner++;
-                    
-                    param_old = vary(i_vary, j_vary);
-                    
-                    // index_i, index_j are indices for where vary's occur
-                    // in symmetric S matrix
-                    
-                    index_i = nx + nm + i_vary;
-                    index_j = nx + nm + j_vary;
-                    
-                    // gradient of S mat wrt to vary
-                    gradient = grad_Smat(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv);
-
-                    grad_delta = fabs(gradient - grad_old)/ (1.0 + fabs(grad_old));
-                    
-		    // if large change in gradient, revert to old parm and jump out of iter_inner loop
-                    // is following portable?
-                    if(isNaN(gradient)){
-                        break;
-                    }
-		    if( fabs(grad_delta) > 10.0){
-                        break;
-		    }
-                    grad_old = gradient;
-               
-                    if (debug2) {
-                        Rcout << "var[" << i_vary << ", " << j_vary << "] old: ";
-                        Rcout << " param " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
-                    }
-                    
-                    // optimize step size
-                    step = vary_step_size;
-                    for (int i = 0; i <10; i++) {
-                        
-                        // note no penalty on vary
-                        param_new = param_old - step*gradient;
-                     
-                        // bound diag var away from 0
-                        if ((i_vary == j_vary) && param_new < 0.00001) {
-                            step = step_mult_vary * step;
-                            continue;
-                        }
-                                
-                        // an item of vary is updated, so update anything depending
-                        // on vary
-
-                        vary(i_vary, j_vary) = param_new;
-                        vary(j_vary, i_vary) = param_new;
-			
-		
-			//Rcout << "before pinv(vary) in mvregmed - 1" << endl;
-			//Rcout << "grad = " << gradient << ", step = " << step <<  endl;
-			//print_mat(vary);
-
-                        vary_inv = pinv(vary);
-                         
-                        logdet_ImpCov = logdet_sum + logdet_Var(vary);
-
-                        ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                        loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
-                        
-                        if (debug2) {
-                            Rcout << "step  var[" << i_vary << ", " << j_vary << "] ";
-                            Rcout << " = " << param_new << ", loss = " << loss_new << endl;
-                            Rcout << "step logdet_sum = " << logdet_sum << ", logdet(vary) = " << logdet_Var(vary);
-                            Rcout << ", tr = " << trace(sampcov * ImpCov_inv) << endl;
-                        }
-                        
-                        if ( loss_new <= loss_old) {
-                            if(debug2) Rcout << "vary break" << endl;  
-                            break;
-                        }
-                        step = step_mult_vary * step;
-                    }// end of step optimization
-                   
-                   
-                    // if after step opt, loss_new > loss_old, revert to loss_old and parm_old
-                    if(loss_old < loss_new){
-                        vary(i_vary, j_vary) = param_old;
-                        vary(j_vary, i_vary) = param_old;
-			//Rcout << "before pinv(vary) in mvregemd - 2" << endl;
-                        vary_inv = pinv(vary);
-                        logdet_ImpCov = logdet_sum + logdet_Var(vary);
-                        ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
-                        loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);    
-                    }
-             
-
-                    // check convergence
-                    pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
- 
-                    if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
-                        converge_inner = true;
-                    }
-
-                    pen_loss_old = pen_loss_new;
-                    loss_old = loss_new;
-                   // moved to top of inner loop  iter_inner++;
-             
-                } // end inner loop
-
-            }
-        }
-
-        // this completes sequentially optimizing over each parameter
-        // check for global convergence by comparing the penalized loss function
-        // at the beginning of a global iter to the end of a global iter
-
-        if (fabs(pen_loss_new - pen_loss_begin) < tol * (fabs(pen_loss_new) + 1.0)) {
-            converge = true;
-        }
-
-        pen_loss_begin = pen_loss_new;
-        
-    } 
-    // end outer loop
-
-    // compute BIC
-
-    int df_alpha = count_df(alpha);
-    int df_beta  = count_df(beta);
-    int df_delta = count_df(delta);
-    int df_vary  = count_df_Vary(vary);
-    int df = df_alpha + df_beta + df_delta + df_vary;
-    
-    double bic = loss_new * sample_size + log(sample_size) * double(df);
-
-    if(debug1){
-        Rcout << "alpha matrix before return:" << endl;
-        print_mat(alpha);
+	  if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
+	    converge_inner = true;
+	  }
+	  
+	  pen_loss_old = pen_loss_new;
+	  loss_old = loss_new;
+	  iter_inner++;
+	  
+	} // end inner loop
+	
+      }
     }
 
-    return Rcpp::List::create(Rcpp::Named("alpha") = alpha,
-                              Rcpp::Named("beta") = beta,
-                              Rcpp::Named("delta") = delta,
-                              Rcpp::Named("varx") = varx,
-                              Rcpp::Named("varm") = varm,
-                              Rcpp::Named("vary") = vary,                         
-                              Rcpp::Named("lambda") = lambda,
-                              Rcpp::Named("converge") = converge,
-                              Rcpp::Named("iter") = iter,
-                              Rcpp::Named("loss") = loss_new,
-                              Rcpp::Named("penloss") = pen_loss_new,
-                              Rcpp::Named("bic") = bic,
-                              Rcpp::Named("df") = df,
-                              Rcpp::Named("df.alpha") = df_alpha, 
-                              Rcpp::Named("df.beta") = df_beta,
-                              Rcpp::Named("df.delta") = df_delta,
-                              Rcpp::Named("df.vary") = df_vary);
+    
+    //============================== update beta's ======================================//
+    if (verbose) Rcout << "   update beta"  << endl;
+    
+    for (int i_beta = 0; i_beta < beta.n_rows; i_beta++) {
+      for (int j_beta = 0; j_beta < beta.n_cols; j_beta++) {
+	
+	if (debug2) {
+	  Rcout << "beta inner loop" << endl;
+	  Rcout << "======= alpha ===========" << endl;
+	  print_mat(alpha);
+	  Rcout << "======= beta ===========" << endl;
+	  print_mat(beta);
+	  Rcout << "======= delta ===========" << endl;
+	  print_mat(delta);
+	  Rcout << "======= vary ===========" << endl;
+	  print_mat(vary);
+	  Rcout << "begin inner loop loss old = " << loss_old << endl;
+	}
+        
+	// inner loop to optimize over a single beta parameter
+	
+	iter_inner = 0;
+	converge_inner = false;
+	while ((iter_inner < max_iter_inner) &&  !converge_inner) {
+	  
+	  param_old = beta(i_beta, j_beta);
+	  // index_i, index_j indices for beta's in Asymmetric A matrix
+	  index_i = nx + nm + i_beta;
+	  index_j = nx + j_beta;
+	  
+	  // old gradient = grad_Amat(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv);
+	  gradient= grad_AmatV2(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv,
+				varx, varm, vary);
+	  // testing
+	  //if(isNaN(gradient)) break;
+	  
+	  if (debug2) {
+	    Rcout << "beta[" << i_beta << ", " << j_beta << "] old: ";
+	    Rcout << " = " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
+	  }
+          
+	  // optimize step size
+	  step = 0.5;
+	  for (int i = 0; i < 10; i++) {
+	    
+	    param_new = update_param(gradient, param_old, step, lambda*pen_beta);
+	    beta(i_beta, j_beta) = param_new;
+	    
+	    // When beta is updated, the following should be updated:
+	    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	    
+	    param_diff = param_new - param_old;
+	    gdiff = gradient * param_diff;
+	    diff2 = param_diff * param_diff;
+	    loss_majorize = loss_old + gdiff + diff2 / (2.0 * step);
+	    
+	    if (debug2) {
+	      Rcout << "step beta[" << i_beta << ", " << j_beta << "] ";
+	      Rcout << " = " << param_new << ", loss new = " << loss_new << ", loss maj = " << loss_majorize << endl;
+	    }
+	    if (loss_new <= loss_majorize) {
+	      if(debug2) Rcout << "beta break" << endl;
+	      break;
+	    }
+	    
+	    step = step_multiplier * step;
+	    
+	  } // end of step optimization
+	  
+          
+	  // if after step opt, loss_new > loss_majorize revert to parma_old
+	  if(loss_new > loss_majorize){
+	    beta(i_beta, j_beta) = param_old;
+	  }
+	  
+	  //if(isNaN(param_new)){
+	  //  beta(i_beta, j_beta) = param_old;
+	  //}
+
+	  // When beta is updated, the following should be updated:
+	  ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	  loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	  
+	  // check convergence
+	  pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
+	  
+	  if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
+	    converge_inner = true;
+	  }
+	  
+	  pen_loss_old = pen_loss_new;
+	  loss_old = loss_new;
+	  iter_inner++;
+	  
+	} // end inner loop
+	
+      }
+    }
+    
+    
+    //============================== update delta's ======================================//
+    if (verbose) Rcout << "   update delta"  << endl;
+    
+    for (int i_delta = 0; i_delta < delta.n_rows; i_delta++) {
+      for (int j_delta = 0; j_delta < delta.n_cols; j_delta++) {
+	
+	if (debug2) {
+	  Rcout << "delta inner loop" << endl;
+	  Rcout << "======= alpha ===========" << endl;
+	  print_mat(alpha);
+	  Rcout << "======= beta ===========" << endl;
+	  print_mat(beta);
+	  Rcout << "======= delta ===========" << endl;
+	  print_mat(delta);
+	  Rcout << "======= vary ===========" << endl;
+	  print_mat(vary);
+	  Rcout << "begin inner loop loss old = " << loss_old << endl;
+	}
+        
+	iter_inner = 0;
+	converge_inner = false;
+	while ((iter_inner < max_iter_inner) &&  !converge_inner) {
+	  
+	  param_old = delta(i_delta, j_delta);
+          
+	  // index_i, index_j are indices for where delta's occur
+	  // in Asymmetric A matrix
+          
+	  index_i = nx + nm + i_delta;
+	  index_j = j_delta;
+          
+	  // gradient of A matrix wrt to delta's
+	  // old gradient = grad_Amat(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv);
+	  gradient= grad_AmatV2(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv,
+				varx, varm, vary);
+	  
+	  if (debug2) {
+	    Rcout << "delta[" << i_delta << ", " << j_delta << "] old: ";
+	    Rcout << " param " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
+	  }
+          
+	  // optimize step size
+	  
+	  step = 0.5;
+	  for (int i = 0; i < 10; i++) {
+	    
+	    param_new = update_param(gradient, param_old, step, lambda*pen_delta);
+	    delta(i_delta, j_delta) = param_new;
+	    
+	    // When delta is updated, the following should be updated:
+	    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	    
+	    param_diff = param_new - param_old;
+	    gdiff = gradient * param_diff;
+	    diff2 = param_diff * param_diff;
+	    loss_majorize = loss_old + gdiff + diff2 / (2.0 * step);
+	    
+	    if (debug2) {
+	      Rcout << "step delta[" << i_delta << ", " << j_delta << "] ";
+	      Rcout << " = " << param_new << ", loss new = " << loss_new << ", loss maj = " << loss_majorize << endl;
+	    }
+            
+	    if (loss_new <= loss_majorize) {
+	      if(debug2) Rcout << "delta break" << endl;
+	      break;
+	    }
+	    
+	    step = step_multiplier * step;
+	    
+	  } // end of step optimization
+	  
+	  // if after step opt, loss_new > loss_majorize revert to parma_old
+	  if(loss_new > loss_majorize){
+	    delta(i_delta, j_delta) = param_old;
+	  }
+	  
+	  // When delta is updated, the following should be updated:
+	  ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	  loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+	  
+	  // check convergence
+	  pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
+	  
+	  if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
+	    converge_inner = true;
+	  }
+	  
+	  pen_loss_old = pen_loss_new;
+	  loss_old = loss_new;
+	  iter_inner++;
+	  
+	} // end inner loop for delta
+      }
+    }
+    
+    
+    //============================== update vary's ======================================//
+    if (verbose) Rcout << "   update vary"  << endl;
+    
+    // note that loops cover upper triangle of vary
+    
+    for (int i_vary = 0; i_vary < vary.n_rows; i_vary++) {
+      for (int j_vary = i_vary; j_vary < vary.n_cols; j_vary++) {
+	
+	if (debug2) {
+	  Rcout << "vary inner loop" << endl;
+	  Rcout << "======= alpha ===========" << endl;
+	  print_mat(alpha);
+	  Rcout << "======= beta ===========" << endl;
+	  print_mat(beta);
+	  Rcout << "======= delta ===========" << endl;
+	  print_mat(delta);
+	  Rcout << "======= vary ===========" << endl;
+	  print_mat(vary);
+	  Rcout << "begin inner loop loss old = " << loss_old << endl;
+	}
+        
+	// inner loop to optimize over a single parameter
+	
+	iter_inner = 0;
+	converge_inner = false;
+        
+	while ((iter_inner < max_iter_inner) &&  !converge_inner) {
+	  
+	  iter_inner++;
+          
+	  param_old = vary(i_vary, j_vary);
+          
+	  // index_i, index_j are indices for where vary's occur
+	  // in symmetric S matrix
+          
+	  index_i = nx + nm + i_vary;
+	  index_j = nx + nm + j_vary;
+          
+	  // gradient of S mat wrt to vary
+	  gradient = grad_Smat(index_i, index_j, alpha, beta, delta, sampcov, varx_inv, varm_inv, vary_inv);
+	  
+	  grad_delta = fabs(gradient - grad_old)/ (1.0 + fabs(grad_old));
+          
+	  // if large change in gradient, revert to old parm and jump out of iter_inner loop
+	  // is following portable?
+	  if(isNaN(gradient)){
+	    break;
+	  }
+	  if( fabs(grad_delta) > 10.0){
+	    break;
+	  }
+	  grad_old = gradient;
+          
+	  if (debug2) {
+	    Rcout << "var[" << i_vary << ", " << j_vary << "] old: ";
+	    Rcout << " param " << param_old << ", loss = " << loss_old << ", grad = " << gradient << endl;
+	  }
+          
+	  // optimize step size
+	  step = vary_step_size;
+	  for (int i = 0; i <10; i++) {
+	    
+	    // note no penalty on vary
+	    param_new = param_old - step*gradient;
+            
+	    // bound diag var away from 0
+	    if ((i_vary == j_vary) && param_new < 0.00001) {
+	      step = step_mult_vary * step;
+	      continue;
+	    }
+            
+	    // an item of vary is updated, so update anything depending
+	    // on vary
+	    
+	    vary(i_vary, j_vary) = param_new;
+	    vary(j_vary, i_vary) = param_new;
+	    
+	    
+	    //Rcout << "before pinv(vary) in mvregmed - 1" << endl;
+	    //Rcout << "grad = " << gradient << ", step = " << step <<  endl;
+	    //print_mat(vary);
+	    
+	    vary_inv = pinv(vary);
+            
+	    logdet_ImpCov = logdet_sum + logdet_Var(vary);
+	    
+	    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);
+            
+	    if (debug2) {
+	      Rcout << "step  var[" << i_vary << ", " << j_vary << "] ";
+	      Rcout << " = " << param_new << ", loss = " << loss_new << endl;
+	      Rcout << "step logdet_sum = " << logdet_sum << ", logdet(vary) = " << logdet_Var(vary);
+	      Rcout << ", tr = " << trace(sampcov * ImpCov_inv) << endl;
+	    }
+            
+	    if ( loss_new <= loss_old) {
+	      if(debug2) Rcout << "vary break" << endl;  
+	      break;
+	    }
+	    step = step_mult_vary * step;
+	  }// end of step optimization
+          
+          
+	  // if after step opt, loss_new > loss_old, revert to loss_old and parm_old
+	  if(loss_old < loss_new){
+	    vary(i_vary, j_vary) = param_old;
+	    vary(j_vary, i_vary) = param_old;
+	    //Rcout << "before pinv(vary) in mvregemd - 2" << endl;
+	    vary_inv = pinv(vary);
+	    logdet_ImpCov = logdet_sum + logdet_Var(vary);
+	    ImpCov_inv = inverse_ImpCov(alpha, beta, delta, varx_inv, varm_inv, vary_inv);
+	    loss_new = logdet_ImpCov + trace(sampcov * ImpCov_inv);    
+	  }
+          
+	  
+	  // check convergence
+	  pen_loss_new = loss_new + penalty(alpha, beta, delta, lambda);
+	  
+	  if (fabs(pen_loss_new - pen_loss_old) < tol * (fabs(pen_loss_old) + 1.0)) {
+	    converge_inner = true;
+	  }
+	  
+	  pen_loss_old = pen_loss_new;
+	  loss_old = loss_new;
+	  // moved to top of inner loop  iter_inner++;
+          
+	} // end inner loop
+	
+      }
+    }
+    
+    // this completes sequentially optimizing over each parameter
+    // check for global convergence by comparing the penalized loss function
+    // at the beginning of a global iter to the end of a global iter
+    if(debug2){
+      cout << "\nalpha matrix" <<endl;
+      print_mat(alpha);
+      cout << endl;
+      cout << "\nbeta matrix" <<endl;
+      print_mat(beta);
+      cout << endl;
+      cout << "\ndelta matrix" <<endl;
+      print_mat(delta);
+      cout << endl;
+      cout << "vary matrix" <<endl;
+      print_mat(vary);
+      cout << endl;
+    }
+    
+    
+    if (fabs(pen_loss_new - pen_loss_begin) < tol * (fabs(pen_loss_new) + 1.0)) {
+      converge = true;
+    }
+    
+    pen_loss_begin = pen_loss_new;
+    
+  } 
+  // end outer loop
+  
+  // compute BIC
+  
+  int df_alpha = count_df(alpha);
+  int df_beta  = count_df(beta);
+  int df_delta = count_df(delta);
+  int df_vary  = count_df_Vary(vary);
+  int df = df_alpha + df_beta + df_delta + df_vary;
+  
+  double bic = loss_new * sample_size + log(sample_size) * double(df);
+  
+  if(debug1){
+    Rcout << "alpha matrix before return:" << endl;
+    print_mat(alpha);
+  }
+  
+  return Rcpp::List::create(Rcpp::Named("alpha") = alpha,
+			    Rcpp::Named("beta") = beta,
+			    Rcpp::Named("delta") = delta,
+			    Rcpp::Named("varx") = varx,
+			    Rcpp::Named("varm") = varm,
+			    Rcpp::Named("vary") = vary,                         
+			    Rcpp::Named("lambda") = lambda,
+			    Rcpp::Named("converge") = converge,
+			    Rcpp::Named("iter") = iter,
+			    Rcpp::Named("loss") = loss_new,
+			    Rcpp::Named("penloss") = pen_loss_new,
+			    Rcpp::Named("bic") = bic,
+			    Rcpp::Named("df") = df,
+			    Rcpp::Named("df.alpha") = df_alpha, 
+			    Rcpp::Named("df.beta") = df_beta,
+			    Rcpp::Named("df.delta") = df_delta,
+			    Rcpp::Named("df.vary") = df_vary);
 }
 
