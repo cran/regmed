@@ -6,10 +6,10 @@ knitr::opts_chunk$set(echo = TRUE,
 require(regmed)
 
 
-## ---- medsim------------------------------------------------------------------
+## ----medsim-------------------------------------------------------------------
 data(medsim)
 
-## ---- filtermediate-----------------------------------------------------------
+## ----filtermediate------------------------------------------------------------
 dat.filter <- regmed.prefilter(x[,1], med, y[,1], k=10)
 colnames(dat.filter$mediator)
 
@@ -24,17 +24,17 @@ med <- dat.filter$mediator
 fit.grid <- regmed.grid(x1, med, y1, lambda.grid, frac.lasso=.8)
 
 
-## ---- methodsgrid-------------------------------------------------------------
+## ----methodsgrid--------------------------------------------------------------
 print(fit.grid)
 plot.regmed.grid(fit.grid)
 
-## ---- fitbest-----------------------------------------------------------------
+## ----fitbest------------------------------------------------------------------
 
 fit.best <- regmed.grid.bestfit(fit.grid)
 summary(fit.best)
 
 
-## ---- singlefit---------------------------------------------------------------
+## ----singlefit----------------------------------------------------------------
 fit.single <- regmed.fit(x1, med, y1, lambda=0.3, frac.lasso=.8)
 summary(fit.single)
 
@@ -47,7 +47,7 @@ edges.any <- regmed.edges(fit.best, type="any")
 plot.regmed.edges(edges.any)
 
 
-## ---- setuplavaan-------------------------------------------------------------
+## ----setuplavaan--------------------------------------------------------------
 
 dat <- regmed.lavaan.dat(x1, med, y1)
 
@@ -56,7 +56,7 @@ mod.best <- regmed.lavaan.model(edges.med, fit.best)
 mod.any <- regmed.lavaan.model(edges.any, fit.best)
 
 
-## ---- fitlavaan---------------------------------------------------------------
+## ----fitlavaan----------------------------------------------------------------
 
 fit.lav.med <- lavaan:::sem(model=mod.best, data=dat)
 summary.lavaan(fit.lav.med)

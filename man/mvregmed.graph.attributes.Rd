@@ -47,6 +47,6 @@ Daniel Schaid and Jason Sinnwell
 }
 \seealso{
   \code{\link{mvregmed.edges}}
-  \code{\link{graph_from_edgelist}}
+  \code{\link[igraph]{graph_from_edgelist}}
 }
 \keyword{ model}
